@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    " I ",
+    "IRI",
+    "ICI"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "R": "minecraft:redstone_block",
+    "C": "minecraft:copper_block"
+  },
+  "result": {
+    "id": "rp-vca:cell_tower",
+    "count": 1
+  }
+}

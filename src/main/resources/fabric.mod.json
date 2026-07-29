@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "rp-vca",
+	"version": "${version}",
+	"name": "RP Voice Additions",
+	"description": "Immersive speaking ranges, phones, emergency calls, radios and cellular infrastructure for Simple Voice Chat.",
+	"authors": [
+		"Evarius"
+	],
+	"license": "CC0-1.0",
+	"icon": "assets/rp-vca/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.evarius.rpvca.RpVoiceAddon"
+		],
+		"client": [
+			"com.evarius.rpvca.RpVoiceAddonClient"
+		],
+		"voicechat": [
+			"com.evarius.rpvca.voice.RpVoicechatPlugin"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~1.21.8",
+		"java": ">=21",
+		"fabric-api": "*",
+		"voicechat_api": ">=2.6.20"
+	}
+}

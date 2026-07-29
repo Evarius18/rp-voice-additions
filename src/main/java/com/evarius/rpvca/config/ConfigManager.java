@@ -1,0 +1,208 @@
+package com.evarius.rpvca.config;
+
+import com.evarius.rpvca.RpVoiceAddon;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import net.fabricmc.loader.api.FabricLoader;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
+import java.util.function.Supplier;
+
+public final class ConfigManager {
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Path DIRECTORY = FabricLoader.getInstance().getConfigDir().resolve("rp-voice-additions");
+
+    private volatile SpeechConfig speech;
+    private volatile PhoneConfig phone;
+    private volatile EmergencyConfig emergency;
+    private volatile RadioConfig radio;
+    private volatile InfrastructureConfig infrastructure;
+    private volatile DeviceConfig devices;
+    private volatile HudConfig hud;
+    private volatile CompatibilityConfig compatibility;
+
+    public void load() {
+        try {
+            Files.createDirectories(DIRECTORY);
+            speech = read("speech.json", SpeechConfig.class, SpeechConfig::new);
+            phone = read("phone.json", PhoneConfig.class, PhoneConfig::new);
+            emergency = read("emergency.json", EmergencyConfig.class, EmergencyConfig::new);
+            radio = read("radio.json", RadioConfig.class, RadioConfig::new);
+            infrastructure = read("infrastructure.json", InfrastructureConfig.class, InfrastructureConfig::new);
+            devices = read("devices.json", DeviceConfig.class, DeviceConfig::new);
+            hud = read("hud.json", HudConfig.class, HudConfig::new);
+            compatibility = read("compatibility.json", CompatibilityConfig.class, CompatibilityConfig::new);
+            validate();
+            saveAll();
+        } catch (IOException exception) {
+            throw new IllegalStateException("RP Voice Additions Konfiguration konnte nicht geladen werden", exception);
+        }
+    }
+
+    private <T> T read(String fileName, Class<T> type, Supplier<T> defaults) throws IOException {
+        Path file = DIRECTORY.resolve(fileName);
+        if (!Files.exists(file)) {
+            return defaults.get();
+        }
+        try (Reader reader = Files.newBufferedReader(file)) {
+            T value = GSON.fromJson(reader, type);
+            return value == null ? defaults.get() : value;
+        } catch (RuntimeException exception) {
+            Path invalid = file.resolveSibling(fileName + ".invalid");
+            Files.copy(file, invalid, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            RpVoiceAddon.LOGGER.error("Ungültige Config {}. Eine Sicherung wurde als {} angelegt.", file, invalid, exception);
+            return defaults.get();
+        }
+    }
+
+    private void validate() {
+        if (speech.modes == null || speech.modes.isEmpty()) {
+            speech = new SpeechConfig();
+        }
+        Set<String> modeIds = new HashSet<>();
+        speech.modes.removeIf(mode -> mode == null || mode.id == null || mode.id.isBlank()
+                || !mode.id.matches("[a-zA-Z0-9_-]+")
+                || !Float.isFinite(mode.distance) || mode.distance <= 0
+                || !modeIds.add(mode.id.toLowerCase(Locale.ROOT)));
+        if (speech.modes.isEmpty()) {
+            speech = new SpeechConfig();
+        }
+        speech.modes.forEach(mode -> {
+            if (mode.displayName == null || mode.displayName.isBlank()) {
+                mode.displayName = mode.id;
+            }
+        });
+        if (speech.defaultMode == null || speech.modes.stream().noneMatch(mode -> mode.id.equalsIgnoreCase(speech.defaultMode))) {
+            speech.defaultMode = speech.modes.getFirst().id;
+        }
+        phone.numberLength = Math.clamp(phone.numberLength, 3, 12);
+        phone.ringTimeoutSeconds = Math.clamp(phone.ringTimeoutSeconds, 5, 120);
+        if (!Float.isFinite(phone.speakerDistance)) {
+            phone.speakerDistance = new PhoneConfig().speakerDistance;
+        }
+        phone.speakerDistance = Math.max(1.0F, phone.speakerDistance);
+        if (emergency.numbers == null) {
+            emergency.numbers = new EmergencyConfig().numbers;
+        }
+        Set<String> emergencyNumbers = new HashSet<>();
+        emergency.numbers.removeIf(number -> number == null || number.number == null
+                || !number.number.matches("[0-9*#]+") || !emergencyNumbers.add(number.number));
+        emergency.numbers.forEach(number -> {
+            if (number.displayName == null || number.displayName.isBlank()) {
+                number.displayName = number.number;
+            }
+            if (number.responderTeam == null) {
+                number.responderTeam = "";
+            }
+        });
+        if (radio.channels == null) {
+            radio.channels = new RadioConfig().channels;
+        }
+        Set<String> channelIds = new HashSet<>();
+        radio.channels.removeIf(channel -> channel == null || channel.id == null || channel.id.isBlank()
+                || !channel.id.matches("[a-zA-Z0-9_.-]+")
+                || !channelIds.add(channel.id.toLowerCase(Locale.ROOT)));
+        radio.channels.forEach(channel -> {
+            if (channel.displayName == null || channel.displayName.isBlank()) {
+                channel.displayName = channel.id;
+            }
+            if (channel.requiredTeam == null) {
+                channel.requiredTeam = "";
+            }
+        });
+        if (!Double.isFinite(radio.maximumRange)) {
+            radio.maximumRange = new RadioConfig().maximumRange;
+        }
+        if (!Double.isFinite(infrastructure.towerRange)) {
+            infrastructure.towerRange = new InfrastructureConfig().towerRange;
+        }
+        infrastructure.towerRange = Math.max(1.0D, infrastructure.towerRange);
+        if (devices.phoneItems == null || devices.phoneItems.isEmpty()) {
+            devices.phoneItems = new DeviceConfig().phoneItems;
+        }
+        if (devices.radioItems == null || devices.radioItems.isEmpty()) {
+            devices.radioItems = new DeviceConfig().radioItems;
+        }
+        devices.phoneItems = cleanIdentifiers(devices.phoneItems, new DeviceConfig().phoneItems);
+        devices.radioItems = cleanIdentifiers(devices.radioItems, new DeviceConfig().radioItems);
+        hud.horizontalAnchor = "left".equalsIgnoreCase(hud.horizontalAnchor) ? "left" : "right";
+        hud.offsetX = Math.clamp(hud.offsetX, 0, 500);
+        hud.offsetY = Math.clamp(hud.offsetY, 0, 500);
+        hud.notificationDurationSeconds = Math.clamp(hud.notificationDurationSeconds, 1, 30);
+        if (compatibility.institutionRadioChannels == null) {
+            compatibility.institutionRadioChannels = new CompatibilityConfig().institutionRadioChannels;
+        }
+        compatibility.institutionRadioChannels.entrySet().removeIf(entry -> entry.getKey() == null
+                || entry.getKey().isBlank() || entry.getValue() == null);
+        compatibility.institutionRadioChannels.replaceAll((key, channels) ->
+                channels.stream().filter(java.util.Objects::nonNull).map(String::trim)
+                        .filter(value -> value.matches("[a-zA-Z0-9_.-]+")).distinct().toList());
+    }
+
+    private void saveAll() throws IOException {
+        write("speech.json", speech);
+        write("phone.json", phone);
+        write("emergency.json", emergency);
+        write("radio.json", radio);
+        write("infrastructure.json", infrastructure);
+        write("devices.json", devices);
+        write("hud.json", hud);
+        write("compatibility.json", compatibility);
+    }
+
+    private void write(String fileName, Object value) throws IOException {
+        try (Writer writer = Files.newBufferedWriter(DIRECTORY.resolve(fileName))) {
+            GSON.toJson(value, writer);
+        }
+    }
+
+    public SpeechConfig speech() {
+        return speech;
+    }
+
+    public PhoneConfig phone() {
+        return phone;
+    }
+
+    public EmergencyConfig emergency() {
+        return emergency;
+    }
+
+    public RadioConfig radio() {
+        return radio;
+    }
+
+    public InfrastructureConfig infrastructure() {
+        return infrastructure;
+    }
+
+    public DeviceConfig devices() {
+        return devices;
+    }
+
+    public HudConfig hud() {
+        return hud;
+    }
+
+    public CompatibilityConfig compatibility() {
+        return compatibility;
+    }
+
+    private static java.util.List<String> cleanIdentifiers(java.util.List<String> values,
+                                                            java.util.List<String> fallback) {
+        values.stream().filter(java.util.Objects::nonNull).map(String::trim)
+                .filter(value -> !value.matches("[a-z0-9_.-]+:[a-z0-9_./-]+"))
+                .forEach(value -> RpVoiceAddon.LOGGER.warn("Ungültige konfigurierte Item-ID '{}' wird ignoriert", value));
+        java.util.List<String> cleaned = values.stream().filter(java.util.Objects::nonNull)
+                .map(String::trim).filter(value -> value.matches("[a-z0-9_.-]+:[a-z0-9_./-]+"))
+                .distinct().toList();
+        return cleaned.isEmpty() ? new java.util.ArrayList<>(fallback) : new java.util.ArrayList<>(cleaned);
+    }
+}
