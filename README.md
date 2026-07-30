@@ -200,7 +200,3 @@ Administrative Historienlöschung:
 ```
 
 Das benötigte Operator-Level wird in `phone.json` über `historyAdminPermissionLevel` konfiguriert.
-
-## Lizenz
-
-CC0 1.0 Universal, siehe [LICENSE](LICENSE).
