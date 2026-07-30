@@ -6,6 +6,11 @@ import java.util.List;
 public final class RadioConfig {
     public boolean enabled = true;
     public boolean requireRadioItem = true;
+    public String deviceLocation = "INVENTORY";
+    public boolean allowMainInventory = true;
+    public boolean allowHotbar = true;
+    public boolean allowOffHand = true;
+    public boolean allowArmorSlots = false;
     public boolean requireSameDimension = true;
     public double maximumRange = 0.0D;
     public List<Channel> channels = new ArrayList<>(List.of(

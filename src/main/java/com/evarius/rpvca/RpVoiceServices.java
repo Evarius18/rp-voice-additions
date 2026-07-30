@@ -36,7 +36,7 @@ public final class RpVoiceServices {
                 .map(number -> number.number)
                 .collect(Collectors.toUnmodifiableSet()));
         towers = new TowerRegistry(stateStore, configs.infrastructure());
-        deviceItems = new DeviceItemResolver(configs.devices());
+        deviceItems = new DeviceItemResolver(configs.devices(), configs.radio());
         compatibility = new CompatibilityManager(configs.compatibility());
         RadioPermissionResolver radioPermissions = new RadioPermissionResolver(compatibility, configs.compatibility());
         speech = new SpeechService(configs.speech());
@@ -63,10 +63,6 @@ public final class RpVoiceServices {
 
     public ConfigManager configs() {
         return configs;
-    }
-
-    public PlayerProfiles profiles() {
-        return profiles;
     }
 
     public TowerRegistry towers() {

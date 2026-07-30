@@ -18,6 +18,8 @@ Mobilfunknetz, ohne Simple Voice Chat zu verändern.
 - Sprechmodi `quiet`, `normal`, `shout` und `scream` mit serverseitigen Reichweiten
 - Mobiltelefon-Item mit persistent zugewiesener Rufnummer und Kontakten
 - direkte Anrufe über Spielername, Rufnummer oder Kontaktname
+- serverseitig validierte Kontaktverwaltung und persistente Anrufhistorie
+- konfigurierbare, eindeutige Telefonnummern nach Vorwahl-/Ziffernschema
 - Annehmen, Ablehnen, Auflegen sowie privater Hörer- und räumlicher Lautsprechermodus
 - frei konfigurierbare Notrufnummern und Weiterleitung an Spieler eines Scoreboard-Teams
 - Funkgerät mit konfigurierbaren, optional teamgeschützten Kanälen
@@ -44,7 +46,10 @@ Menschen in der Nähe hören den Sprecher deshalb weiterhin räumlich.
 ```
 
 Natives Flüstern von Simple Voice Chat bleibt erhalten und wird von den zusätzlichen Modi
-nicht überschrieben.
+nicht überschrieben. `WHISPER` kann in `speech.json` Teil der Durchschaltreihenfolge sein.
+Da die öffentliche Simple-Voice-Chat-API 2.6.20 keinen Setter für den Mikrofon-Flüsterzustand
+anbietet, wird dafür weiterhin die native SVC-Flüstertaste verwendet. RP-VCA erkennt den
+echten Paketstatus serverseitig und zeigt im HUD an, wenn die SVC-Taste noch erforderlich ist.
 
 ### Telefon
 
@@ -61,7 +66,9 @@ nicht überschrieben.
 ```
 
 Ein Rechtsklick mit einem konfigurierten Telefon öffnet die Portrait-GUI. Dort stehen
-Wählfeld, Kontakte, Notruf, Gesprächssteuerung und optionale Apps zur Verfügung.
+Wählfeld, Kontakte, Notruf, Anrufhistorie, Gesprächssteuerung und optionale Apps zur Verfügung.
+Kontakte sowie einzelne Historieneinträge können direkt verwaltet werden. Vor dem vollständigen
+Leeren der Historie ist eine zweite Bestätigung erforderlich.
 Die Oberfläche erscheint als unverwischtes Handgerät unten rechts; TerraNexus-Apps werden
 nur eingeblendet, wenn die serverseitige optionale Integration tatsächlich verfügbar ist.
 
@@ -167,6 +174,32 @@ aufeinander zu.
   ergänzt.
 - Verschlüsselung und Relais können auf den bestehenden
   kanalbezogenen Voice-Chat-Kategorien aufbauen.
+
+## Öffentliche Integrations-API
+
+Optionale Mods können nach einem Fabric-Mod-Loaded-Check über
+`RpVcaApi.getPhoneService()` auf den laufenden `PhoneService` zugreifen. Öffentliche
+Methoden stehen für Kontaktmutationen, unveränderliche Kontakt- und Historienansichten,
+Historienlöschung, Telefonnummernvergabe und Gesprächssteuerung bereit. Interne
+`PlayerProfiles`-Objekte werden nicht über den Service-Locator freigegeben.
+
+Institutionsmods können Funkmitgliedschaften über
+`RpVcaApi.registerInstitutionMembershipProvider(...)` bereitstellen. RP-VCA greift dafür
+weder per Reflection noch direkt auf fremde Speicherklassen zu. Optionale Geräte, Apps und
+Institutionsschlüssel werden über öffentliche Provider in `RpVcaApi` registriert.
+
+Die Spielerdatei besitzt ab Schema 2 zusätzlich `callHistory`. Bestehende Profile ohne dieses
+Feld werden beim Laden mit einer leeren Liste migriert; vorhandene Nummern und Kontakte
+bleiben erhalten.
+
+Administrative Historienlöschung:
+
+```text
+/rpvoice phone history clear <Spieler>
+/rpvoice phone history clear-all
+```
+
+Das benötigte Operator-Level wird in `phone.json` über `historyAdminPermissionLevel` konfiguriert.
 
 ## Lizenz
 

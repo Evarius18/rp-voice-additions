@@ -74,16 +74,44 @@ public final class ConfigManager {
         if (speech.modes.isEmpty()) {
             speech = new SpeechConfig();
         }
-        speech.modes.forEach(mode -> {
-            if (mode.displayName == null || mode.displayName.isBlank()) {
-                mode.displayName = mode.id;
-            }
-        });
         if (speech.defaultMode == null || speech.modes.stream().noneMatch(mode -> mode.id.equalsIgnoreCase(speech.defaultMode))) {
             speech.defaultMode = speech.modes.getFirst().id;
         }
+        if (speech.modeOrder == null) {
+            speech.modeOrder = new SpeechConfig().modeOrder;
+        }
+        Set<String> validSpeechIds = speech.modes.stream()
+                .map(mode -> mode.id.toUpperCase(Locale.ROOT))
+                .collect(java.util.stream.Collectors.toSet());
+        validSpeechIds.add("WHISPER");
+        speech.modeOrder = speech.modeOrder.stream().filter(java.util.Objects::nonNull)
+                .map(value -> value.trim().toUpperCase(Locale.ROOT))
+                .filter(validSpeechIds::contains).distinct().toList();
+        if (speech.modeOrder.isEmpty()) {
+            speech.modeOrder = new java.util.ArrayList<>(new SpeechConfig().modeOrder);
+        } else {
+            speech.modeOrder = new java.util.ArrayList<>(speech.modeOrder);
+        }
         phone.numberLength = Math.clamp(phone.numberLength, 3, 12);
         phone.ringTimeoutSeconds = Math.clamp(phone.ringTimeoutSeconds, 5, 120);
+        phone.maxContactNameLength = Math.clamp(phone.maxContactNameLength, 1, 64);
+        phone.maxContactsPerPlayer = Math.clamp(phone.maxContactsPerPlayer, 1, 1_000);
+        phone.maxCallHistoryEntries = Math.clamp(phone.maxCallHistoryEntries, 0, 1_000);
+        phone.historyAdminPermissionLevel = Math.clamp(phone.historyAdminPermissionLevel, 0, 4);
+        if (phone.phoneNumberGeneration == null) {
+            phone.phoneNumberGeneration = new PhoneConfig.PhoneNumberGeneration();
+        }
+        PhoneConfig.PhoneNumberGeneration numberGeneration = phone.phoneNumberGeneration;
+        if (numberGeneration.prefix == null || !numberGeneration.prefix.matches("[0-9]*")) {
+            RpVoiceAddon.LOGGER.warn("Ungültige Telefonnummern-Vorwahl; Standardwert wird verwendet");
+            numberGeneration.prefix = new PhoneConfig.PhoneNumberGeneration().prefix;
+        }
+        numberGeneration.randomDigits = Math.clamp(numberGeneration.randomDigits, 1, 12);
+        if (numberGeneration.separator == null || numberGeneration.separator.length() > 4
+                || !numberGeneration.separator.matches("[\\s.\\-/]*")) {
+            numberGeneration.separator = new PhoneConfig.PhoneNumberGeneration().separator;
+        }
+        numberGeneration.maxGenerationAttempts = Math.clamp(numberGeneration.maxGenerationAttempts, 1, 100_000);
         if (!Float.isFinite(phone.speakerDistance)) {
             phone.speakerDistance = new PhoneConfig().speakerDistance;
         }
@@ -101,6 +129,15 @@ public final class ConfigManager {
             if (number.responderTeam == null) {
                 number.responderTeam = "";
             }
+            if (number.responderKeys == null) {
+                number.responderKeys = new java.util.ArrayList<>();
+            }
+            if (!number.responderTeam.isBlank() && number.responderKeys.isEmpty()) {
+                number.responderKeys.add(number.responderTeam);
+            }
+            number.responderKeys = number.responderKeys.stream().filter(java.util.Objects::nonNull)
+                    .map(value -> value.trim().toLowerCase(Locale.ROOT))
+                    .filter(value -> value.matches("[a-z0-9_.-]+")).distinct().toList();
         });
         if (radio.channels == null) {
             radio.channels = new RadioConfig().channels;
@@ -120,6 +157,10 @@ public final class ConfigManager {
         if (!Double.isFinite(radio.maximumRange)) {
             radio.maximumRange = new RadioConfig().maximumRange;
         }
+        radio.deviceLocation = switch (radio.deviceLocation == null ? "" : radio.deviceLocation.toUpperCase(Locale.ROOT)) {
+            case "HAND", "HOTBAR" -> radio.deviceLocation.toUpperCase(Locale.ROOT);
+            default -> "INVENTORY";
+        };
         if (!Double.isFinite(infrastructure.towerRange)) {
             infrastructure.towerRange = new InfrastructureConfig().towerRange;
         }
@@ -130,7 +171,11 @@ public final class ConfigManager {
         if (devices.radioItems == null || devices.radioItems.isEmpty()) {
             devices.radioItems = new DeviceConfig().radioItems;
         }
+        if (devices.externalPhoneItems == null) {
+            devices.externalPhoneItems = new DeviceConfig().externalPhoneItems;
+        }
         devices.phoneItems = cleanIdentifiers(devices.phoneItems, new DeviceConfig().phoneItems);
+        devices.externalPhoneItems = cleanIdentifiers(devices.externalPhoneItems, java.util.List.of());
         devices.radioItems = cleanIdentifiers(devices.radioItems, new DeviceConfig().radioItems);
         hud.horizontalAnchor = "left".equalsIgnoreCase(hud.horizontalAnchor) ? "left" : "right";
         hud.offsetX = Math.clamp(hud.offsetX, 0, 500);

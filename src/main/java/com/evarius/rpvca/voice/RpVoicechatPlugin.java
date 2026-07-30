@@ -42,6 +42,7 @@ public final class RpVoicechatPlugin implements VoicechatPlugin {
         registration.registerEvent(MicrophonePacketEvent.class, this::onMicrophonePacket);
         if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
             com.evarius.rpvca.client.audio.ClientRadioAudio.register(registration);
+            com.evarius.rpvca.client.compatibility.svc.SvcWhisperCompatibility.register(registration);
         }
     }
 
@@ -63,10 +64,16 @@ public final class RpVoicechatPlugin implements VoicechatPlugin {
     private void onVoiceDistance(VoiceDistanceEvent event) {
         RpVoiceServices services = RpVoiceServices.get();
         if (services == null || event.getSenderConnection() == null
-                || !services.configs().speech().enabled || event.getPacket().isWhispering()) {
+                || !services.configs().speech().enabled) {
             return;
         }
         UUID senderId = event.getSenderConnection().getPlayer().getUuid();
+        services.speech().observeNativeWhisper(senderId, event.getPacket().isWhispering());
+        if (event.getPacket().isWhispering() || services.speech().isWhisper(senderId)) {
+            // Native SVC packets retain SVC's own whisper distance. A selected-but-not-native
+            // whisper never receives a synthetic low-distance fallback.
+            return;
+        }
         event.setDistance(services.speech().mode(senderId).distance);
     }
 
@@ -88,12 +95,12 @@ public final class RpVoicechatPlugin implements VoicechatPlugin {
     private void routePhone(MicrophonePacketEvent event, RpVoiceServices services,
                             VoicechatServerApi voiceApi, ServerPlayerEntity sender) {
         PhoneService.CallSession call = services.phones().activeCall(sender.getUuid());
-        if (call == null || !services.phones().hasCoverage(sender)) {
+        if (call == null || !services.phones().canRouteAudio(sender)) {
             return;
         }
         UUID receiverId = call.other(sender.getUuid());
         ServerPlayerEntity receiver = services.server().getPlayerManager().getPlayer(receiverId);
-        if (receiver == null || !services.phones().hasCoverage(receiver)) {
+        if (receiver == null || !services.phones().canRouteAudio(receiver)) {
             return;
         }
         if (services.phones().isSpeakerEnabled(receiverId)) {

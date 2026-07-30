@@ -26,37 +26,37 @@ public final class RadioService {
 
     public boolean tune(ServerPlayerEntity player, String id) {
         if (!config.enabled) {
-            player.sendMessage(Text.literal("§cFunk ist deaktiviert."));
+            player.sendMessage(Text.translatable("message.rp-vca.radio.disabled"));
             return false;
         }
         if (config.requireRadioItem && !hasRadio(player)) {
-            player.sendMessage(Text.literal("§cDu benötigst ein Funkgerät."));
+            player.sendMessage(Text.translatable("message.rp-vca.radio.device_required"));
             return false;
         }
         RadioConfig.Channel channel = channel(id);
         if (channel == null) {
-            player.sendMessage(Text.literal("§cUnbekannter Funkkanal."));
+            player.sendMessage(Text.translatable("message.rp-vca.radio.unknown_channel"));
             return false;
         }
         if (!hasAccess(player, channel)) {
-            player.sendMessage(Text.literal("§cKeine Berechtigung für diesen Funkkanal."));
+            player.sendMessage(Text.translatable("message.rp-vca.radio.not_allowed"));
             return false;
         }
         tunedChannels.put(player.getUuid(), channel.id);
         transmitting.remove(player.getUuid());
-        player.sendMessage(Text.literal("§aFunkkanal: " + channel.displayName + " (" + channel.id + ")"));
+        player.sendMessage(Text.translatable("message.rp-vca.radio.tuned", channel.displayName, channel.id));
         return true;
     }
 
     public void off(ServerPlayerEntity player) {
         tunedChannels.remove(player.getUuid());
         transmitting.remove(player.getUuid());
-        player.sendMessage(Text.literal("§7Funkgerät ausgeschaltet."));
+        player.sendMessage(Text.translatable("message.rp-vca.radio.off"));
     }
 
     public boolean toggleTransmit(ServerPlayerEntity player) {
         if (!canOperate(player)) {
-            player.sendMessage(Text.literal("§cWähle zuerst einen verfügbaren Funkkanal."));
+            player.sendMessage(Text.translatable("message.rp-vca.radio.select_channel"));
             return false;
         }
         boolean enabled;
@@ -66,7 +66,8 @@ public final class RadioService {
             transmitting.add(player.getUuid());
             enabled = true;
         }
-        player.sendMessage(Text.literal(enabled ? "§cFunkübertragung aktiv (TX)." : "§7Funkübertragung beendet."));
+        player.sendMessage(Text.translatable(enabled
+                ? "message.rp-vca.radio.transmitting" : "message.rp-vca.radio.transmit_stopped"));
         return enabled;
     }
 
@@ -135,6 +136,19 @@ public final class RadioService {
 
     private boolean hasRadio(ServerPlayerEntity player) {
         return deviceItems.hasRadio(player);
+    }
+
+    public boolean hasUsableRadio(ServerPlayerEntity player) {
+        return !config.requireRadioItem || hasRadio(player);
+    }
+
+    /**
+     * Reports whether the player actually carries a configured radio device.
+     * This deliberately ignores {@code requireRadioItem}: routing policy and
+     * physical device presence are separate concerns.
+     */
+    public boolean hasRadioDevice(ServerPlayerEntity player) {
+        return hasRadio(player);
     }
 
     private boolean hasAccess(ServerPlayerEntity player, RadioConfig.Channel channel) {

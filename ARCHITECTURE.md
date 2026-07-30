@@ -14,6 +14,8 @@
 - `config`: getrennte, validierte Serverkonfigurationen
 - `state`: atomar gespeicherte Spielerprofile und Mobilfunkmasten
 - `service`: Zustandsautomaten und fachliche Zugriffsregeln
+- `api`: stabiler öffentlicher Einstiegspunkt und Mutationsergebnisse
+- `phone`: Nummernnormalisierung/-vergabe und unveränderliche Historienmodelle
 - `voice`: Integration und Audiokanäle der Simple-Voice-Chat-API
 - `content`: Minecraft-Items und Mobilfunkmast-Block
 - `item`: Auflösung konfigurierter Geräteitems
@@ -25,7 +27,7 @@
 - `client.hud`: rein darstellendes, konfigurierbares Overlay
 - `client.audio`: clientseitige Lautstärkeanpassung ausschließlich für RP-VCA-Funkkanäle
 - `compatibility`: allgemeine optionale App-Schnittstellen
-- `integration.terranexus`: isolierte Reflection-Bridge ohne harte Abhängigkeit
+- `api`: optionale Provider-Schnittstellen ohne harte Laufzeitabhängigkeit
 - `permissions`: kombinierte Vanilla- und Institutionsrechte
 
 Alle relevanten Entscheidungen liegen auf dem Server. Clients können keine Empfänger,
@@ -56,7 +58,36 @@ Integrationsausfall auch aus einem bereits geöffneten Screen.
 
 ## Optionale Integrationen
 
-`CompatibilityManager` prüft zunächst die Fabric-Modliste. TerraNexus-Klassen werden erst
-danach und ausschließlich per Reflection aufgelöst. Ein Linkage- oder API-Fehler deaktiviert
-die Integration für die laufende Sitzung, während Telefon, Funk und Scoreboard-Teamrechte
-normal weiterarbeiten.
+Optionale Mods registrieren ausschließlich öffentliche Provider über `RpVcaApi`:
+`InstitutionMembershipProvider`, `DeviceCapabilityProvider` und
+`PhoneApplicationProvider`. RP-VCA referenziert keine TerraNexus-Klasse und verwendet
+keine Reflection. TerraNexus bindet diese API nur `compileOnly` ein und lädt seinen Adapter
+erst nach einem positiven Fabric-Mod-Check. Fehlt einer der Mods, bleiben beide eigenständig
+lauffähig. Vanilla-Scoreboard-Teamrechte bleiben zusätzlich aktiv.
+
+`DeviceItemResolver` trennt Gerätefähigkeit und GUI-Verantwortung. Das RP-VCA-Handy ist
+Telefon und öffnet den Standard-Screen; ein externes TerraNexus-Handy ist ebenfalls Telefon,
+öffnet aber ausschließlich seine eigene Oberfläche.
+
+## Telefonpersistenz und API
+
+`PlayerProfiles` bleibt der einzige Eigentümer von `players.json`. `PhoneService` ist die
+öffentliche, servergebundene Mutationsgrenze und synchronisiert Änderungen unmittelbar.
+`RpVcaApi` gibt ausschließlich den laufenden Service zurück; mutable Profile und Collections
+bleiben intern.
+
+Schema 2 ergänzt jedes Profil um eine begrenzte Anrufhistorie. Fehlende Felder erhalten
+sichere Standardwerte. Historieneinträge speichern Nummern und Anzeigenamen als Snapshot,
+während nach außen ausschließlich immutable `CallHistoryEntryView`-Records gelangen.
+
+## Native SVC-Flüsterintegration
+
+`SpeechService` führt `WHISPER` in der konfigurierbaren Modusreihenfolge, setzt jedoch keine
+synthetische Flüsterdistanz. `RpVoicechatPlugin` übernimmt den Flüsterzustand ausschließlich
+aus dem echten `MicrophonePacket#isWhispering()` und lässt native Pakete von SVC behandeln.
+Die Client-Bridge `SvcWhisperCompatibility` benutzt nur die öffentliche `VoicechatClientApi`.
+
+API 2.6.20 stellt keinen öffentlichen Setter für den lokalen Mikrofon-Flüsterzustand bereit.
+Darum manipuliert RP-VCA weder interne SVC-Keybinds noch interne Speicherklassen. Zum
+Aktivieren bleibt die native SVC-Flüstertaste erforderlich; der HUD-Zusatz `SVC-Taste`
+kennzeichnet diesen Zustand transparent.

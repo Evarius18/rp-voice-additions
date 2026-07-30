@@ -22,6 +22,10 @@ public final class JsonStateStore {
         directory = server.getSavePath(WorldSavePath.ROOT).resolve("rp-voice-additions");
     }
 
+    JsonStateStore(Path directory) {
+        this.directory = directory;
+    }
+
     public <T> T load(String fileName, Class<T> type, Supplier<T> defaults) {
         Path file = directory.resolve(fileName);
         if (!Files.exists(file)) {
@@ -42,7 +46,7 @@ public final class JsonStateStore {
         }
     }
 
-    public synchronized void save(String fileName, Object value) {
+    public synchronized boolean save(String fileName, Object value) {
         try {
             Files.createDirectories(directory);
             Path file = directory.resolve(fileName);
@@ -55,8 +59,10 @@ public final class JsonStateStore {
             } catch (java.nio.file.AtomicMoveNotSupportedException ignored) {
                 Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
             }
+            return true;
         } catch (IOException exception) {
             RpVoiceAddon.LOGGER.error("Statusdatei {} konnte nicht gespeichert werden", fileName, exception);
+            return false;
         }
     }
 }

@@ -1,12 +1,13 @@
 package com.evarius.rpvca.content;
 
 import com.evarius.rpvca.RpVoiceAddon;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroups;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -27,16 +28,22 @@ public final class ModContent {
                     .sounds(BlockSoundGroup.METAL)
                     .pistonBehavior(PistonBehavior.BLOCK)
                     .requiresTool()));
+    public static final ItemGroup COMMUNICATION_GROUP = Registry.register(Registries.ITEM_GROUP,
+            RpVoiceAddon.id("communication"),
+            FabricItemGroup.builder()
+                    .icon(() -> new ItemStack(MOBILE_PHONE))
+                    .displayName(net.minecraft.text.Text.translatable("itemgroup.rp-vca.communication"))
+                    .entries((context, entries) -> {
+                        entries.add(MOBILE_PHONE);
+                        entries.add(RADIO);
+                        entries.add(CELL_TOWER);
+                    }).build());
 
     private ModContent() {
     }
 
     public static void initialize() {
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> {
-            entries.add(MOBILE_PHONE);
-            entries.add(RADIO);
-            entries.add(CELL_TOWER);
-        });
+        // Triggers static registration. Entries are declared exactly once in the dedicated group.
     }
 
     private static Item registerItem(String path, java.util.function.Function<RegistryKey<Item>, Item> factory) {

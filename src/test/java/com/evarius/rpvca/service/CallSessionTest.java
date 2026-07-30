@@ -16,6 +16,8 @@ class CallSessionTest {
 
         assertEquals(second, session.other(first));
         assertEquals(first, session.other(second));
+        assertEquals("", session.otherNumber(first));
+        assertEquals("", session.otherNumber(second));
         assertThrows(IllegalArgumentException.class, () -> session.other(UUID.randomUUID()));
     }
 }

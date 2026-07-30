@@ -16,7 +16,8 @@ public final class MobilePhoneItem extends Item {
 
     @Override
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
-        if (!world.isClient() && user instanceof ServerPlayerEntity player && RpVoiceServices.get() != null) {
+        if (!world.isClient() && user instanceof ServerPlayerEntity player && RpVoiceServices.get() != null
+                && RpVoiceServices.get().deviceItems().shouldOpenRpVcaScreen(user.getStackInHand(hand))) {
             CommunicationNetworking.openDevice(player, "phone");
         }
         return ActionResult.SUCCESS;

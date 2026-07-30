@@ -4,7 +4,6 @@ import com.evarius.rpvca.RpVoiceAddon;
 import com.evarius.rpvca.RpVoiceServices;
 import com.evarius.rpvca.config.RadioConfig;
 import com.evarius.rpvca.config.SpeechConfig;
-import com.evarius.rpvca.state.PlayerProfiles;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.ServerCommandSource;
@@ -28,11 +27,21 @@ public final class RpVoiceCommands {
                                     .suggests((context, builder) -> {
                                         RpVoiceServices services = RpVoiceServices.get();
                                         if (services != null) {
-                                            for (SpeechConfig.Mode mode : services.configs().speech().modes) builder.suggest(mode.id);
+                                            for (String mode : services.configs().speech().modeOrder) {
+                                                builder.suggest(mode.toLowerCase(java.util.Locale.ROOT));
+                                            }
                                         }
                                         return builder.buildFuture();
                                     })
                                     .executes(context -> setRange(context.getSource(), StringArgumentType.getString(context, "mode")))))
+                    .then(literal("phone")
+                            .then(literal("history")
+                                    .then(literal("clear")
+                                            .then(argument("player", StringArgumentType.word())
+                                                    .executes(context -> clearPlayerHistory(context.getSource(),
+                                                            StringArgumentType.getString(context, "player")))))
+                                    .then(literal("clear-all")
+                                            .executes(context -> clearAllHistories(context.getSource())))))
                     .then(literal("reload").requires(source -> source.hasPermissionLevel(2))
                             .executes(context -> reload(context.getSource()))));
 
@@ -85,7 +94,9 @@ public final class RpVoiceCommands {
     private static int rangeStatus(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayerEntity player = source.getPlayerOrThrow();
         SpeechConfig.Mode mode = services().speech().mode(player.getUuid());
-        source.sendFeedback(() -> Text.literal("§6Sprechmodus §7| §f" + mode.displayName + " §7(" + mode.distance + " Blöcke)"), false);
+        source.sendFeedback(() -> Text.translatable("command.rp-vca.speech.status",
+                Text.translatable(com.evarius.rpvca.speech.SpeechMode.translationKey(mode.id)),
+                "whisper".equals(mode.id) ? "SVC" : mode.distance), false);
         return 1;
     }
 
@@ -93,16 +104,18 @@ public final class RpVoiceCommands {
         ServerPlayerEntity player = source.getPlayerOrThrow();
         SpeechConfig.Mode mode = services().speech().setMode(player.getUuid(), id);
         if (mode == null) {
-            source.sendError(Text.literal("Unbekannter Sprechmodus."));
+            source.sendError(Text.translatable("command.rp-vca.speech.unknown"));
             return 0;
         }
-        source.sendFeedback(() -> Text.literal("§aSprechmodus: " + mode.displayName + " (" + mode.distance + " Blöcke)"), false);
+        source.sendFeedback(() -> Text.translatable("command.rp-vca.speech.changed",
+                Text.translatable(com.evarius.rpvca.speech.SpeechMode.translationKey(mode.id)),
+                "whisper".equals(mode.id) ? "SVC" : mode.distance), false);
         return 1;
     }
 
     private static int reload(ServerCommandSource source) {
         RpVoiceAddon.reload(source.getServer());
-        source.sendFeedback(() -> Text.literal("§aRP Voice Additions Konfiguration neu geladen."), true);
+        source.sendFeedback(() -> Text.translatable("command.rp-vca.reload"), true);
         return 1;
     }
 
@@ -114,8 +127,7 @@ public final class RpVoiceCommands {
 
     private static int call(ServerCommandSource source, String destination) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayerEntity player = source.getPlayerOrThrow();
-        PlayerProfiles.Profile profile = services().profiles().getOrCreate(player.getUuid(), player.getGameProfile().getName());
-        return services().phones().call(player, profile.contacts.getOrDefault(destination, destination)) ? 1 : 0;
+        return services().phones().call(player, destination) ? 1 : 0;
     }
 
     private static int answer(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
@@ -137,30 +149,59 @@ public final class RpVoiceCommands {
 
     private static int listContacts(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayerEntity player = source.getPlayerOrThrow();
-        PlayerProfiles.Profile profile = services().profiles().getOrCreate(player.getUuid(), player.getGameProfile().getName());
-        source.sendFeedback(() -> Text.literal(profile.contacts.isEmpty() ? "§7Keine Kontakte gespeichert."
-                : "§6Kontakte: §f" + profile.contacts), false);
-        return profile.contacts.size();
+        java.util.Map<String, String> contacts = services().phones().getContacts(player);
+        source.sendFeedback(() -> contacts.isEmpty()
+                ? Text.translatable("command.rp-vca.contacts.empty")
+                : Text.translatable("command.rp-vca.contacts.list", contacts), false);
+        return contacts.size();
     }
 
     private static int addContact(ServerCommandSource source, String name, String number)
             throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayerEntity player = source.getPlayerOrThrow();
-        PlayerProfiles.Profile profile = services().profiles().getOrCreate(player.getUuid(), player.getGameProfile().getName());
-        profile.contacts.put(name, number);
-        services().profiles().save();
-        source.sendFeedback(() -> Text.literal("§aKontakt gespeichert: " + name + " → " + number), false);
-        return 1;
+        com.evarius.rpvca.api.ContactMutationResult result =
+                services().phones().upsertContact(player, name, number);
+        source.sendFeedback(() -> result.successful()
+                ? Text.translatable("command.rp-vca.contact.saved", name, number)
+                : Text.translatable("command.rp-vca.contact.failed", result), false);
+        return result.successful() ? 1 : 0;
     }
 
     private static int removeContact(ServerCommandSource source, String name)
             throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayerEntity player = source.getPlayerOrThrow();
-        PlayerProfiles.Profile profile = services().profiles().getOrCreate(player.getUuid(), player.getGameProfile().getName());
-        boolean removed = profile.contacts.remove(name) != null;
-        services().profiles().save();
-        source.sendFeedback(() -> Text.literal(removed ? "§7Kontakt entfernt." : "§cKontakt nicht gefunden."), false);
-        return removed ? 1 : 0;
+        com.evarius.rpvca.api.ContactMutationResult result =
+                services().phones().removeContact(player, name);
+        source.sendFeedback(() -> result.successful()
+                ? Text.translatable("command.rp-vca.contact.removed")
+                : Text.translatable("command.rp-vca.contact.failed", result), false);
+        return result.successful() ? 1 : 0;
+    }
+
+    private static int clearPlayerHistory(ServerCommandSource source, String playerName)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayerEntity administrator = source.getPlayerOrThrow();
+        java.util.Optional<java.util.UUID> target = services().phones().findPlayerIdByName(playerName);
+        if (target.isEmpty()) {
+            source.sendError(Text.translatable("command.rp-vca.profile.not_found"));
+            return 0;
+        }
+        com.evarius.rpvca.api.HistoryMutationResult result =
+                services().phones().clearCallHistory(administrator, target.get());
+        source.sendFeedback(() -> result.successful()
+                ? Text.translatable("command.rp-vca.history.player_cleared", playerName)
+                : Text.translatable("command.rp-vca.history.failed", result), true);
+        return result.successful() ? 1 : 0;
+    }
+
+    private static int clearAllHistories(ServerCommandSource source)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        com.evarius.rpvca.api.HistoryMutationResult result =
+                services().phones().clearAllCallHistories(source.getPlayerOrThrow());
+        source.sendFeedback(() -> result.successful()
+                ? Text.translatable("command.rp-vca.history.all_cleared")
+                : Text.translatable("command.rp-vca.history.failed", result), true);
+        return result.successful() ? 1 : 0;
     }
 
     private static int radioStatus(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
@@ -187,13 +228,13 @@ public final class RpVoiceCommands {
         String channels = services().configs().radio().channels.stream()
                 .map(channel -> channel.id + "=" + channel.displayName)
                 .reduce((first, second) -> first + ", " + second).orElse("keine");
-        source.sendFeedback(() -> Text.literal("§6Funkkanäle: §f" + channels), false);
+        source.sendFeedback(() -> Text.translatable("command.rp-vca.radio.channels", channels), false);
         return services().configs().radio().channels.size();
     }
 
     private static int listTowers(ServerCommandSource source) {
         int count = services().towers().all().size();
-        source.sendFeedback(() -> Text.literal("§6Registrierte Mobilfunkmasten: §f" + count), false);
+        source.sendFeedback(() -> Text.translatable("command.rp-vca.towers", count), false);
         return count;
     }
 

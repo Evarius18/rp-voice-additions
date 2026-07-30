@@ -6,24 +6,25 @@ import java.util.List;
 public final class SpeechConfig {
     public boolean enabled = true;
     public String defaultMode = "normal";
+    public List<String> modeOrder = new ArrayList<>(List.of(
+            "WHISPER", "QUIET", "NORMAL", "SHOUT", "SCREAM"
+    ));
     public List<Mode> modes = new ArrayList<>(List.of(
-            new Mode("quiet", "Leise", 8.0F),
-            new Mode("normal", "Normal", 32.0F),
-            new Mode("shout", "Rufen", 64.0F),
-            new Mode("scream", "Schreien", 96.0F)
+            new Mode("quiet", 8.0F),
+            new Mode("normal", 32.0F),
+            new Mode("shout", 64.0F),
+            new Mode("scream", 96.0F)
     ));
 
     public static final class Mode {
         public String id;
-        public String displayName;
         public float distance;
 
         public Mode() {
         }
 
-        public Mode(String id, String displayName, float distance) {
+        public Mode(String id, float distance) {
             this.id = id;
-            this.displayName = displayName;
             this.distance = distance;
         }
     }

@@ -45,8 +45,16 @@ public final class CommunicationHud {
     private static List<Line> lines(HudConfig config, CommunicationStatus status) {
         List<Line> lines = new ArrayList<>();
         if (config.showSpeech) {
-            String suffix = config.showSpeechRange ? " · " + Math.round(status.speechDistance) + "m" : "";
-            lines.add(new Line(Text.literal("◉ " + status.speechDisplayName + suffix), 0xFFE9F7FA));
+            boolean whisper = "whisper".equalsIgnoreCase(status.speechMode);
+            Text suffix = whisper
+                    ? (com.evarius.rpvca.client.compatibility.svc.SvcWhisperCompatibility.isNativeWhispering()
+                    ? Text.translatable("hud.rp-vca.speech.svc")
+                    : Text.translatable("hud.rp-vca.speech.svc_key"))
+                    : config.showSpeechRange
+                    ? Text.translatable("hud.rp-vca.speech.range", Math.round(status.speechDistance))
+                    : Text.empty();
+            lines.add(new Line(Text.literal("◉ ").append(Text.translatable(status.speechTranslationKey))
+                    .append(suffix), 0xFFE9F7FA));
         }
         if (config.showPhone && (!config.hideInactivePhone || !"idle".equals(status.phoneState))) {
             String phone = switch (status.phoneState) {
@@ -61,15 +69,33 @@ public final class CommunicationHud {
             lines.add(new Line(Text.literal(phone), "incoming".equals(status.phoneState) ? 0xFF72F0A5 : 0xFF9EDBE5));
         }
         if (config.showPhone && status.phoneNotice != null && !status.phoneNotice.isBlank()) {
-            lines.add(new Line(Text.literal("☎ " + status.phoneNotice), 0xFFFFC766));
+            Text notice = status.phoneNotice.startsWith("notice.rp-vca.")
+                    ? Text.translatable(status.phoneNotice) : Text.literal(status.phoneNotice);
+            lines.add(new Line(Text.translatable("hud.rp-vca.phone.notice", notice), 0xFFFFC766));
         }
-        boolean radioActive = !status.radioChannel.isBlank();
-        if (config.showRadio && (!config.hideInactiveRadio || radioActive)) {
-            String channel = radioActive ? status.radioDisplayName : Text.translatable("hud.rp-vca.radio.off").getString();
+        if (config.showPhone && "active".equals(status.phoneState) && !status.phoneHeld) {
+            lines.add(new Line(Text.translatable("hud.rp-vca.phone.must_be_held"), 0xFFFFC766));
+        }
+        if (shouldRenderRadioHud(status, config)) {
+            boolean radioActive = isRadioActive(status);
+            String channel = radioActive ? status.radioDisplayName
+                    : Text.translatable("hud.rp-vca.radio.off").getString();
             lines.add(new Line(Text.literal("⌁ " + channel + " · " + (status.radioTransmitting ? "TX" : "RX")),
                     status.radioTransmitting ? 0xFFFF7657 : 0xFFB5D4A7));
         }
         return lines;
+    }
+
+    static boolean shouldRenderRadioHud(CommunicationStatus status, HudConfig config) {
+        // A disabled item requirement affects routing only. It must not make the
+        // HUD claim that the player actually carries a radio.
+        return config.showRadio && status.radioAvailable
+                && (!config.hideInactiveRadio || isRadioActive(status));
+    }
+
+    private static boolean isRadioActive(CommunicationStatus status) {
+        return status.radioEnabled && status.radioPoweredOn
+                && status.radioAvailable && !status.radioChannel.isBlank();
     }
 
     private record Line(Text text, int color) {

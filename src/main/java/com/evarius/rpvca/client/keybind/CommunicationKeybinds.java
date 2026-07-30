@@ -1,7 +1,6 @@
 package com.evarius.rpvca.client.keybind;
 
 import com.evarius.rpvca.client.ClientActions;
-import com.evarius.rpvca.client.gui.PhoneScreen;
 import com.evarius.rpvca.client.gui.RadioScreen;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -20,6 +19,7 @@ public final class CommunicationKeybinds {
     private static KeyBinding answerCall;
     private static KeyBinding hangupCall;
     private static KeyBinding quietMode;
+    private static KeyBinding whisperMode;
     private static KeyBinding normalMode;
     private static KeyBinding shoutMode;
     private static KeyBinding screamMode;
@@ -37,6 +37,7 @@ public final class CommunicationKeybinds {
         answerCall = bind("key.rp-vca.phone_answer", GLFW.GLFW_KEY_UNKNOWN);
         hangupCall = bind("key.rp-vca.phone_hangup", GLFW.GLFW_KEY_UNKNOWN);
         quietMode = bind("key.rp-vca.mode_quiet", GLFW.GLFW_KEY_UNKNOWN);
+        whisperMode = bind("key.rp-vca.mode_whisper", GLFW.GLFW_KEY_UNKNOWN);
         normalMode = bind("key.rp-vca.mode_normal", GLFW.GLFW_KEY_UNKNOWN);
         shoutMode = bind("key.rp-vca.mode_shout", GLFW.GLFW_KEY_UNKNOWN);
         screamMode = bind("key.rp-vca.mode_scream", GLFW.GLFW_KEY_UNKNOWN);
@@ -49,12 +50,14 @@ public final class CommunicationKeybinds {
 
     private static void tick(MinecraftClient client) {
         while (cycleSpeech.wasPressed()) ClientActions.send("speech_cycle");
-        while (openPhone.wasPressed()) client.setScreen(new PhoneScreen());
+        while (openPhone.wasPressed()) ClientActions.send("open_phone_request");
         while (openRadio.wasPressed()) client.setScreen(new RadioScreen());
         while (toggleSpeaker.wasPressed()) ClientActions.send("phone_speaker");
-        while (answerCall.wasPressed()) ClientActions.send("phone_answer");
+        while (answerCall.wasPressed()) ClientActions.send("phone_answer",
+                com.evarius.rpvca.client.ClientCommunicationState.get().phoneCallId);
         while (hangupCall.wasPressed()) ClientActions.send("phone_hangup");
         while (quietMode.wasPressed()) ClientActions.send("speech_set", "quiet");
+        while (whisperMode.wasPressed()) ClientActions.send("speech_set", "whisper");
         while (normalMode.wasPressed()) ClientActions.send("speech_set", "normal");
         while (shoutMode.wasPressed()) ClientActions.send("speech_set", "shout");
         while (screamMode.wasPressed()) ClientActions.send("speech_set", "scream");

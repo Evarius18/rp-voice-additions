@@ -1,34 +1,35 @@
 package com.evarius.rpvca.compatibility;
 
-import com.evarius.rpvca.RpVoiceAddon;
 import com.evarius.rpvca.config.CompatibilityConfig;
-import com.evarius.rpvca.integration.terranexus.TerraNexusIntegration;
-import net.fabricmc.loader.api.FabricLoader;
+import com.evarius.rpvca.api.PhoneApplicationProvider;
 import net.minecraft.server.network.ServerPlayerEntity;
 
-import java.util.List;
 import java.util.Set;
 
 public final class CompatibilityManager {
-    private final TerraNexusIntegration terraNexus;
+    private final boolean terraNexusEnabled;
+    private final boolean phoneAppsEnabled;
+    private final boolean institutionPermissionsEnabled;
 
     public CompatibilityManager(CompatibilityConfig config) {
-        boolean loaded = config.terraNexusEnabled && FabricLoader.getInstance().isModLoaded("terranexus");
-        terraNexus = loaded ? TerraNexusIntegration.create(config) : TerraNexusIntegration.unavailable();
-        if (loaded && terraNexus.available()) {
-            RpVoiceAddon.LOGGER.info("TerraNexus-Kompatibilität aktiviert");
-        }
+        institutionPermissionsEnabled = config.terraNexusInstitutionPermissionsEnabled;
+        terraNexusEnabled = config.terraNexusEnabled;
+        phoneAppsEnabled = config.terraNexusPhoneAppEnabled;
     }
 
     public boolean terraNexusAvailable() {
-        return terraNexus.available();
+        return terraNexusEnabled && net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("terranexus");
     }
 
-    public List<PhoneIntegration> phoneIntegrations() {
-        return terraNexus.phoneAppEnabled() ? List.of(terraNexus) : List.of();
+    public java.util.Map<String, PhoneApplicationProvider> phoneIntegrations() {
+        return terraNexusEnabled && phoneAppsEnabled
+                ? com.evarius.rpvca.api.RpVcaApi.phoneApplications() : java.util.Map.of();
     }
 
     public Set<String> terraNexusInstitutionKeys(ServerPlayerEntity player) {
-        return terraNexus.institutionKeys(player);
+        if (!institutionPermissionsEnabled) {
+            return Set.of();
+        }
+        return com.evarius.rpvca.api.RpVcaApi.institutionMembershipKeys(player);
     }
 }

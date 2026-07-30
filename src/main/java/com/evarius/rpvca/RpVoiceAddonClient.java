@@ -18,7 +18,11 @@ public final class RpVoiceAddonClient implements ClientModInitializer {
     public void onInitializeClient() {
         ClientConfigStore.load();
         ClientPlayNetworking.registerGlobalReceiver(StatusPayload.ID, (payload, context) ->
-                context.client().execute(() -> ClientCommunicationState.update(payload.json())));
+                context.client().execute(() -> {
+                    ClientCommunicationState.update(payload.json());
+                    com.evarius.rpvca.client.gui.IncomingCallController.onStatus(
+                            context.client(), ClientCommunicationState.get());
+                }));
         ClientPlayNetworking.registerGlobalReceiver(OpenDevicePayload.ID, (payload, context) ->
                 context.client().execute(() -> {
                     if ("phone".equals(payload.device())) {

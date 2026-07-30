@@ -34,12 +34,12 @@ public class RpVoiceAddon implements ModInitializer {
 					|| !(player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer)) {
 				return ActionResult.PASS;
 			}
-			net.minecraft.item.Item item = player.getStackInHand(hand).getItem();
-			if (services.deviceItems().isPhone(item)) {
+			net.minecraft.item.ItemStack stack = player.getStackInHand(hand);
+			if (services.deviceItems().shouldOpenRpVcaScreen(stack)) {
 				CommunicationNetworking.openDevice(serverPlayer, "phone");
 				return ActionResult.SUCCESS;
 			}
-			if (services.deviceItems().isRadio(item)) {
+			if (services.deviceItems().isRadio(stack)) {
 				CommunicationNetworking.openDevice(serverPlayer, "radio");
 				return ActionResult.SUCCESS;
 			}
@@ -60,7 +60,7 @@ public class RpVoiceAddon implements ModInitializer {
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			RpVoiceServices services = RpVoiceServices.get();
 			if (services != null) {
-				services.phones().profile(handler.player);
+				services.phones().initializeProfile(handler.player);
 				CommunicationNetworking.sync(handler.player);
 			}
 		});
