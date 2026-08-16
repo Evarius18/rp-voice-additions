@@ -233,7 +233,8 @@ public final class RpVoiceCommands {
     }
 
     private static int listTowers(ServerCommandSource source) {
-        int count = services().towers().all().size();
+        int count = Math.toIntExact(services().towers().count(
+                com.evarius.rpvca.state.TowerRegistry.TowerType.CELLULAR));
         source.sendFeedback(() -> Text.translatable("command.rp-vca.towers", count), false);
         return count;
     }

@@ -1,0 +1,5 @@
+{
+  "type":"minecraft:crafting_shaped","category":"redstone","pattern":["LLL","LML"," R "],
+  "key":{"L":"minecraft:redstone_lamp","M":"rp-vca:mast_sirene_zwei","R":"minecraft:redstone"},
+  "result":{"id":"rp-vca:mast_sirene_drei","count":1}
+}

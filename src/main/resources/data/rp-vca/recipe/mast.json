@@ -1,0 +1,4 @@
+{
+  "type":"minecraft:crafting_shaped","category":"building","pattern":[" B ","B B"," B "],
+  "key":{"B":"minecraft:iron_bars"},"result":{"id":"rp-vca:mast","count":2}
+}

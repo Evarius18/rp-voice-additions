@@ -1,0 +1,5 @@
+{
+  "type":"minecraft:crafting_shaped","category":"building","pattern":["I I","ICI","III"],
+  "key":{"I":"minecraft:iron_ingot","C":"minecraft:light_gray_concrete"},
+  "result":{"id":"rp-vca:mast_basis","count":1}
+}

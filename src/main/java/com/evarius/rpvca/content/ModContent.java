@@ -1,6 +1,7 @@
 package com.evarius.rpvca.content;
 
 import com.evarius.rpvca.RpVoiceAddon;
+import com.evarius.rpvca.state.TowerRegistry;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
@@ -21,13 +22,18 @@ public final class ModContent {
             key -> new MobilePhoneItem(new Item.Settings().registryKey(key).maxCount(1)));
     public static final Item RADIO = registerItem("radio",
             key -> new RadioItem(new Item.Settings().registryKey(key).maxCount(1)));
-    public static final Block CELL_TOWER = registerBlock("cell_tower",
-            key -> new CellTowerBlock(AbstractBlock.Settings.create()
-                    .registryKey(key)
-                    .strength(4.0F, 8.0F)
-                    .sounds(BlockSoundGroup.METAL)
-                    .pistonBehavior(PistonBehavior.BLOCK)
-                    .requiresTool()));
+    public static final Block MAST_BASIS = registerBlock("mast_basis",
+            key -> new Block(mastSettings(key)));
+    public static final Block MAST = registerBlock("mast",
+            key -> new Block(mastSettings(key)));
+    public static final Block MAST_SIRENE_ZWEI = registerBlock("mast_sirene_zwei",
+            key -> new Block(mastSettings(key)));
+    public static final Block MAST_SIRENE_DREI = registerBlock("mast_sirene_drei",
+            key -> new Block(mastSettings(key)));
+    public static final Block MAST_MOBILFUNK = registerBlock("mast_mobilfunk",
+            key -> new FunctionalMastBlock(mastSettings(key), TowerRegistry.TowerType.CELLULAR));
+    public static final Block MAST_DIGITALFUNK = registerBlock("mast_digitalfunk",
+            key -> new FunctionalMastBlock(mastSettings(key), TowerRegistry.TowerType.DIGITAL_RADIO));
     public static final ItemGroup COMMUNICATION_GROUP = Registry.register(Registries.ITEM_GROUP,
             RpVoiceAddon.id("communication"),
             FabricItemGroup.builder()
@@ -36,7 +42,12 @@ public final class ModContent {
                     .entries((context, entries) -> {
                         entries.add(MOBILE_PHONE);
                         entries.add(RADIO);
-                        entries.add(CELL_TOWER);
+                        entries.add(MAST_BASIS);
+                        entries.add(MAST);
+                        entries.add(MAST_SIRENE_ZWEI);
+                        entries.add(MAST_SIRENE_DREI);
+                        entries.add(MAST_MOBILFUNK);
+                        entries.add(MAST_DIGITALFUNK);
                     }).build());
 
     private ModContent() {
@@ -59,5 +70,15 @@ public final class ModContent {
         RegistryKey<Item> itemKey = RegistryKey.of(RegistryKeys.ITEM, id);
         Registry.register(Registries.ITEM, itemKey, new BlockItem(block, new Item.Settings().registryKey(itemKey)));
         return block;
+    }
+
+    private static AbstractBlock.Settings mastSettings(RegistryKey<Block> key) {
+        return AbstractBlock.Settings.create()
+                .registryKey(key)
+                .strength(4.0F, 8.0F)
+                .sounds(BlockSoundGroup.METAL)
+                .pistonBehavior(PistonBehavior.BLOCK)
+                .requiresTool()
+                .nonOpaque();
     }
 }

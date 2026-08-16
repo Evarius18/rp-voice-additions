@@ -12,7 +12,7 @@
 ## Module
 
 - `config`: getrennte, validierte Serverkonfigurationen
-- `state`: atomar gespeicherte Spielerprofile und Mobilfunkmasten
+- `state`: atomar gespeicherte Spielerprofile sowie typisierte Mobilfunk- und Digitalfunkmasten
 - `service`: Zustandsautomaten und fachliche Zugriffsregeln
 - `api`: stabiler öffentlicher Einstiegspunkt und Mutationsergebnisse
 - `phone`: Nummernnormalisierung/-vergabe und unveränderliche Historienmodelle
@@ -35,7 +35,9 @@ Reichweiten, Rollen oder Netzabdeckung vorgeben.
 
 ## Erweiterungspunkte
 
-Relaisstationen oder Signalstärken können hinter `TowerRegistry.hasCoverage` ergänzt werden.
+`TowerRegistry` unterscheidet Mobilfunkabdeckung und Digitalfunkrelais. Alte persistierte
+Masteinträge ohne Typ werden kompatibel als Mobilfunkmast migriert. Weitere Relaisarten oder
+Signalstärken können hinter den typisierten Coverage-Abfragen ergänzt werden.
 Digitale Funkgruppen und Verschlüsselungskennzeichen gehören in `RadioService`. Warteschlangen
 oder Leitstellenterminals können den Zielresolver von `PhoneService` erweitern, ohne das
 Voice-Routing neu zu strukturieren.

@@ -1,0 +1,5 @@
+{
+  "type":"minecraft:crafting_shaped","category":"redstone","pattern":["EAE","RMR"," I "],
+  "key":{"E":"minecraft:ender_pearl","A":"minecraft:amethyst_shard","R":"minecraft:repeater","M":"rp-vca:mast","I":"minecraft:iron_ingot"},
+  "result":{"id":"rp-vca:mast_digitalfunk","count":1}
+}

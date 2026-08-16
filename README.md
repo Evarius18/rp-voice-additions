@@ -25,7 +25,8 @@ Mobilfunknetz, ohne Simple Voice Chat zu verändern.
 - Funkgerät mit konfigurierbaren, optional teamgeschützten Kanälen
 - umschaltbare Funkübertragung (TX) bei weiterhin hörbarer Umgebung
 - optionale Reichweitenbegrenzung für Funk
-- platzierbare und persistent registrierte Mobilfunkmasten
+- modularer Mastbaukasten mit Basis, Segmenten, Signal-, Mobilfunk- und Digitalfunkaufsätzen
+- platzierbare, persistent registrierte Mobilfunkmasten und optionale Digitalfunkrelais
 - eigene Lautstärkeregler „Telefon“ und „Funk“ in Simple Voice Chat
 - eigenständige Portrait-Handy-GUI und kompakte Funkgerät-GUI
 - konfigurierbare Geräteitems, einschließlich `terranexus:mobile_phone`
@@ -106,7 +107,8 @@ Funkkanal sowie RX/TX an. Position und sichtbare Bereiche werden in `hud.json` e
 ```
 
 Beide Befehle benötigen Operator-Level 2. Mobilfunkmasten werden durch Platzieren des
-`rp-vca:cell_tower`-Blocks registriert und beim Abbau wieder entfernt.
+`rp-vca:mast_mobilfunk`- und `rp-vca:mast_digitalfunk`-Aufsätze werden beim Platzieren
+registriert und beim Abbau wieder entfernt. Die Sirenenvarianten sind derzeit dekorativ.
 
 ## Konfiguration
 
@@ -123,8 +125,12 @@ Beim ersten Start entstehen unter `config/rp-voice-additions/`:
 - `client.json` – lokale Funklautstärke aus der Funkgeräte-GUI
 
 Mit `phone.requireCoverage=true` benötigen beide Gesprächsteilnehmer Netzabdeckung.
-`infrastructure.enabled=true` aktiviert die Prüfung gegen platzierte Masten. Bei Ausfall
+`infrastructure.enabled=true` aktiviert die Prüfung gegen `mast_mobilfunk`. Bei Ausfall
 der Abdeckung wird ein laufendes Gespräch getrennt.
+
+Mit `digitalRadioRelaysEnabled=true` erweitert `mast_digitalfunk` begrenzte Funkkanäle.
+Sender und Empfänger müssen jeweils innerhalb `digitalRadioRelayRange` eines registrierten
+Digitalfunkaufsatzes liegen. Bei `radio.maximumRange=0` bleibt Funk wie bisher unbegrenzt.
 
 Geschützte Notruf- und Funkrollen werden absichtlich über Vanilla-Scoreboard-Teams
 abgebildet, damit keine RP-Hauptmod oder Permission-Mod zwingend erforderlich ist:

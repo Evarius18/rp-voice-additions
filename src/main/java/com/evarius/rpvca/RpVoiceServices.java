@@ -2,6 +2,7 @@ package com.evarius.rpvca;
 
 import com.evarius.rpvca.config.ConfigManager;
 import com.evarius.rpvca.compatibility.CompatibilityManager;
+import com.evarius.rpvca.content.ModContent;
 import com.evarius.rpvca.item.DeviceItemResolver;
 import com.evarius.rpvca.permissions.RadioPermissionResolver;
 import com.evarius.rpvca.service.PhoneService;
@@ -36,13 +37,14 @@ public final class RpVoiceServices {
                 .map(number -> number.number)
                 .collect(Collectors.toUnmodifiableSet()));
         towers = new TowerRegistry(stateStore, configs.infrastructure());
+        towers.reconcile(server, ModContent.MAST_MOBILFUNK, ModContent.MAST_DIGITALFUNK);
         deviceItems = new DeviceItemResolver(configs.devices(), configs.radio());
         compatibility = new CompatibilityManager(configs.compatibility());
         RadioPermissionResolver radioPermissions = new RadioPermissionResolver(compatibility, configs.compatibility());
         speech = new SpeechService(configs.speech());
         phones = new PhoneService(server, configs.phone(), configs.emergency(), profiles, towers, deviceItems,
                 configs.hud().notificationDurationSeconds);
-        radios = new RadioService(configs.radio(), deviceItems, radioPermissions);
+        radios = new RadioService(configs.radio(), deviceItems, radioPermissions, towers);
     }
 
     public static void start(MinecraftServer server, ConfigManager configs) {

@@ -1,0 +1,1 @@
+{"type":"minecraft:block","pools":[{"rolls":1,"entries":[{"type":"minecraft:item","name":"rp-vca:mast_sirene_zwei"}],"conditions":[{"condition":"minecraft:survives_explosion"}]}],"random_sequence":"rp-vca:blocks/mast_sirene_zwei"}

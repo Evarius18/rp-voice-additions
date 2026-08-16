@@ -1,0 +1,11 @@
+{
+  "replace":false,
+  "values":[
+    "rp-vca:mast_basis",
+    "rp-vca:mast",
+    "rp-vca:mast_sirene_zwei",
+    "rp-vca:mast_sirene_drei",
+    "rp-vca:mast_mobilfunk",
+    "rp-vca:mast_digitalfunk"
+  ]
+}

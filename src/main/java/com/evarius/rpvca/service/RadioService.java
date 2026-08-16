@@ -3,6 +3,7 @@ package com.evarius.rpvca.service;
 import com.evarius.rpvca.config.RadioConfig;
 import com.evarius.rpvca.item.DeviceItemResolver;
 import com.evarius.rpvca.permissions.RadioPermissionResolver;
+import com.evarius.rpvca.state.TowerRegistry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 
@@ -15,13 +16,16 @@ public final class RadioService {
     private final RadioConfig config;
     private final DeviceItemResolver deviceItems;
     private final RadioPermissionResolver permissions;
+    private final TowerRegistry towers;
     private final Map<UUID, String> tunedChannels = new ConcurrentHashMap<>();
     private final Set<UUID> transmitting = ConcurrentHashMap.newKeySet();
 
-    public RadioService(RadioConfig config, DeviceItemResolver deviceItems, RadioPermissionResolver permissions) {
+    public RadioService(RadioConfig config, DeviceItemResolver deviceItems, RadioPermissionResolver permissions,
+                        TowerRegistry towers) {
         this.config = config;
         this.deviceItems = deviceItems;
         this.permissions = permissions;
+        this.towers = towers;
     }
 
     public boolean tune(ServerPlayerEntity player, String id) {
@@ -116,9 +120,14 @@ public final class RadioService {
         if (config.requireSameDimension && sender.getWorld() != receiver.getWorld()) {
             return false;
         }
-        return config.maximumRange <= 0.0D
-                || (sender.getWorld() == receiver.getWorld()
-                && sender.squaredDistanceTo(receiver) <= config.maximumRange * config.maximumRange);
+        if (config.maximumRange <= 0.0D) {
+            return true;
+        }
+        if (sender.getWorld() == receiver.getWorld()
+                && sender.squaredDistanceTo(receiver) <= config.maximumRange * config.maximumRange) {
+            return true;
+        }
+        return towers.hasRadioRelayCoverage(sender) && towers.hasRadioRelayCoverage(receiver);
     }
 
     public String status(ServerPlayerEntity player) {

@@ -1,0 +1,5 @@
+{
+  "type":"minecraft:crafting_shaped","category":"redstone","pattern":["CAC","RMR"," C "],
+  "key":{"C":"minecraft:copper_ingot","A":"minecraft:amethyst_shard","R":"minecraft:redstone","M":"rp-vca:mast"},
+  "result":{"id":"rp-vca:mast_mobilfunk","count":1}
+}

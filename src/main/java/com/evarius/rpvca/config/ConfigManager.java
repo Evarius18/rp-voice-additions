@@ -165,6 +165,10 @@ public final class ConfigManager {
             infrastructure.towerRange = new InfrastructureConfig().towerRange;
         }
         infrastructure.towerRange = Math.max(1.0D, infrastructure.towerRange);
+        if (!Double.isFinite(infrastructure.digitalRadioRelayRange)) {
+            infrastructure.digitalRadioRelayRange = new InfrastructureConfig().digitalRadioRelayRange;
+        }
+        infrastructure.digitalRadioRelayRange = Math.max(1.0D, infrastructure.digitalRadioRelayRange);
         if (devices.phoneItems == null || devices.phoneItems.isEmpty()) {
             devices.phoneItems = new DeviceConfig().phoneItems;
         }
