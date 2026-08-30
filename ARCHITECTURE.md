@@ -8,6 +8,7 @@
 4. `RadioService` liefert bei aktivem TX die berechtigten Empfänger desselben Kanals.
 5. `RpVoicechatPlugin` leitet das originale Opus-Paket ohne erneute Kodierung weiter.
 6. Das ursprüngliche räumliche Paket bleibt bestehen, damit die Umgebung den Sprecher hört.
+7. `SirenService` kann dasselbe Mikrofonpaket zusätzlich an verknüpfte Sirenenstandorte senden.
 
 ## Module
 
@@ -29,6 +30,7 @@
 - `compatibility`: allgemeine optionale App-Schnittstellen
 - `api`: optionale Provider-Schnittstellen ohne harte Laufzeitabhängigkeit
 - `permissions`: kombinierte Vanilla- und Institutionsrechte
+- `siren`: persistente Steuerungen, Endpunkte, Szenarien, Termine und Durchsagemetadaten
 
 Alle relevanten Entscheidungen liegen auf dem Server. Clients können keine Empfänger,
 Reichweiten, Rollen oder Netzabdeckung vorgeben.
@@ -41,6 +43,19 @@ Signalstärken können hinter den typisierten Coverage-Abfragen ergänzt werden.
 Digitale Funkgruppen und Verschlüsselungskennzeichen gehören in `RadioService`. Warteschlangen
 oder Leitstellenterminals können den Zielresolver von `PhoneService` erweitern, ohne das
 Voice-Routing neu zu strukturieren.
+
+## Sirenensystem
+
+`SirenService` ist die serverseitige Vertrauens- und Persistenzgrenze. Verknüpfungen referenzieren
+stabile UUIDs statt Blocknamen oder Spielerangaben. Steuerblockaktionen werden ausschließlich
+gegen eine zuvor serverseitig eröffnete Sitzung ausgeführt. Szenarien stammen aus `siren.json`;
+Termine und Verknüpfungen aus der Weltdatei `sirens.json`.
+
+`SirenVoiceEngine` besitzt die SVC-Lifecycle-Ressourcen. Mitgelieferte MP3-Signale werden einmal
+dekodiert, auf 48 kHz Mono normalisiert und über räumliche Audiokanäle an jedem Endpunkt
+ausgegeben. Live-Durchsagen kopieren originale Opus-Pakete. Aufnahmen werden serverseitig
+dekodiert, zeitlich mit Stille aufgefüllt und als PCM gespeichert. Die öffentliche `SirenApi`
+enthält keine TerraNexus-Klassen; automatische Leitstellen können sie über `RpVcaApi` abrufen.
 
 ## Vertrauensgrenze
 

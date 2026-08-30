@@ -29,6 +29,12 @@ public final class RpVcaApi {
         return services == null ? Optional.empty() : Optional.of(services.phones());
     }
 
+    /** Optional server-side siren service for TerraNexus control-center applications. */
+    public static Optional<SirenApi> getSirenService() {
+        RpVoiceServices services = RpVoiceServices.get();
+        return services == null ? Optional.empty() : Optional.of(services.sirens());
+    }
+
     public static void registerInstitutionMembershipProvider(String providerId,
                                                              InstitutionMembershipProvider provider) {
         if (providerId == null || providerId.isBlank() || provider == null) {

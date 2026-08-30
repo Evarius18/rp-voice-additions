@@ -8,6 +8,7 @@ import com.evarius.rpvca.permissions.RadioPermissionResolver;
 import com.evarius.rpvca.service.PhoneService;
 import com.evarius.rpvca.service.RadioService;
 import com.evarius.rpvca.service.SpeechService;
+import com.evarius.rpvca.siren.SirenService;
 import com.evarius.rpvca.state.JsonStateStore;
 import com.evarius.rpvca.state.PlayerProfiles;
 import com.evarius.rpvca.state.TowerRegistry;
@@ -28,6 +29,7 @@ public final class RpVoiceServices {
     private final RadioService radios;
     private final DeviceItemResolver deviceItems;
     private final CompatibilityManager compatibility;
+    private final SirenService sirens;
 
     private RpVoiceServices(MinecraftServer server, ConfigManager configs) {
         this.server = server;
@@ -45,13 +47,16 @@ public final class RpVoiceServices {
         phones = new PhoneService(server, configs.phone(), configs.emergency(), profiles, towers, deviceItems,
                 configs.hud().notificationDurationSeconds);
         radios = new RadioService(configs.radio(), deviceItems, radioPermissions, towers);
+        sirens = new SirenService(server, configs.siren(), stateStore);
     }
 
-    public static void start(MinecraftServer server, ConfigManager configs) {
+    public static synchronized void start(MinecraftServer server, ConfigManager configs) {
+        if (instance != null) instance.sirens.shutdown();
         instance = new RpVoiceServices(server, configs);
     }
 
-    public static void stop() {
+    public static synchronized void stop() {
+        if (instance != null) instance.sirens.shutdown();
         instance = null;
     }
 
@@ -89,5 +94,9 @@ public final class RpVoiceServices {
 
     public CompatibilityManager compatibility() {
         return compatibility;
+    }
+
+    public SirenService sirens() {
+        return sirens;
     }
 }

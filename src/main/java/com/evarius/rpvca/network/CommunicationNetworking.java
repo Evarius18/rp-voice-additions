@@ -22,6 +22,7 @@ public final class CommunicationNetworking {
         PayloadTypeRegistry.playC2S().register(DeviceActionPayload.ID, DeviceActionPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(OpenDevicePayload.ID, OpenDevicePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(StatusPayload.ID, StatusPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(SirenControllerPayload.ID, SirenControllerPayload.CODEC);
     }
 
     public static void registerServerReceiver() {
@@ -41,6 +42,13 @@ public final class CommunicationNetworking {
         }
         CommunicationStatus status = createStatus(services, player);
         ServerPlayNetworking.send(player, new StatusPayload(GSON.toJson(status)));
+    }
+
+    public static void openSirenController(ServerPlayerEntity player,
+                                           com.evarius.rpvca.siren.SirenControllerSnapshot snapshot) {
+        if (ServerPlayNetworking.canSend(player, SirenControllerPayload.ID)) {
+            ServerPlayNetworking.send(player, new SirenControllerPayload(GSON.toJson(snapshot)));
+        }
     }
 
     private static void handle(ServerPlayerEntity player, DeviceActionPayload payload) {
@@ -80,6 +88,35 @@ public final class CommunicationNetworking {
             case "radio_tx" -> services.radios().setTransmitting(player, Boolean.parseBoolean(value));
             case "radio_toggle" -> services.radios().toggleTransmit(player);
             case "radio_off" -> services.radios().off(player);
+            case "siren_trigger" -> sendSirenResult(services, player,
+                    services.sirens().triggerFromOpenSession(player, value));
+            case "siren_stop" -> sendSirenResult(services, player,
+                    services.sirens().stopFromOpenSession(player));
+            case "siren_link" -> sendSirenResult(services, player,
+                    services.sirens().beginLinkMode(player));
+            case "siren_schedule" -> {
+                String[] fields = value.split("\\t", 2);
+                sendSirenResult(services, player, fields.length == 2
+                        ? services.sirens().scheduleFromOpenSession(player, fields[0], fields[1])
+                        : com.evarius.rpvca.api.SirenActionResult.INVALID_REQUEST);
+            }
+            case "siren_cancel" -> sendSirenResult(services, player, parseUuid(value)
+                    .map(id -> services.sirens().cancelFromOpenSession(player, id))
+                    .orElse(com.evarius.rpvca.api.SirenActionResult.INVALID_REQUEST));
+            case "siren_live" -> sendSirenResult(services, player,
+                    com.evarius.rpvca.voice.SirenVoiceEngine.isLive(player.getUuid())
+                            ? services.sirens().stopLiveAnnouncement(player)
+                            : services.sirens().startLiveFromOpenSession(player));
+            case "siren_record" -> sendSirenResult(services, player,
+                    com.evarius.rpvca.voice.SirenVoiceEngine.isRecording(player.getUuid())
+                            ? services.sirens().stopAndSaveRecording(player, value)
+                            : services.sirens().startRecording(player));
+            case "siren_announcement" -> sendSirenResult(services, player, parseUuid(value)
+                    .map(id -> services.sirens().playAnnouncement(player, id))
+                    .orElse(com.evarius.rpvca.api.SirenActionResult.INVALID_REQUEST));
+            case "siren_announcement_remove" -> sendSirenResult(services, player, parseUuid(value)
+                    .map(id -> services.sirens().removeAnnouncement(player, id))
+                    .orElse(com.evarius.rpvca.api.SirenActionResult.INVALID_REQUEST));
             case "compat_open" -> {
                 com.evarius.rpvca.api.PhoneApplicationProvider app =
                         services.compatibility().phoneIntegrations().get(value);
@@ -89,6 +126,12 @@ public final class CommunicationNetworking {
                     player.getGameProfile().getName());
         }
         sync(player);
+    }
+
+    private static void sendSirenResult(RpVoiceServices services, ServerPlayerEntity player,
+                                        com.evarius.rpvca.api.SirenActionResult result) {
+        String notice = "notice.rp-vca.siren." + result.name().toLowerCase(java.util.Locale.ROOT);
+        services.sirens().sendSnapshot(player, notice);
     }
 
     private static CommunicationStatus createStatus(RpVoiceServices services, ServerPlayerEntity player) {

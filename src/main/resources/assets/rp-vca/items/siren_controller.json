@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "rp-vca:block/siren_controller"
+  }
+}

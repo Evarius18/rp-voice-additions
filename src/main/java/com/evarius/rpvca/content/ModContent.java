@@ -22,18 +22,25 @@ public final class ModContent {
             key -> new MobilePhoneItem(new Item.Settings().registryKey(key).maxCount(1)));
     public static final Item RADIO = registerItem("radio",
             key -> new RadioItem(new Item.Settings().registryKey(key).maxCount(1)));
+    public static final Item SIREN_PROGRAMMER = registerItem("siren_programmer",
+            key -> new Item(new Item.Settings().registryKey(key).maxCount(1)));
     public static final Block MAST_BASIS = registerBlock("mast_basis",
             key -> new Block(mastSettings(key)));
     public static final Block MAST = registerBlock("mast",
             key -> new Block(mastSettings(key)));
     public static final Block MAST_SIRENE_ZWEI = registerBlock("mast_sirene_zwei",
-            key -> new Block(mastSettings(key)));
+            key -> new SirenBlock(mastSettings(key), "two_head"));
     public static final Block MAST_SIRENE_DREI = registerBlock("mast_sirene_drei",
-            key -> new Block(mastSettings(key)));
+            key -> new SirenBlock(mastSettings(key), "three_head"));
     public static final Block MAST_MOBILFUNK = registerBlock("mast_mobilfunk",
             key -> new FunctionalMastBlock(mastSettings(key), TowerRegistry.TowerType.CELLULAR));
     public static final Block MAST_DIGITALFUNK = registerBlock("mast_digitalfunk",
             key -> new FunctionalMastBlock(mastSettings(key), TowerRegistry.TowerType.DIGITAL_RADIO));
+    public static final Block SIREN_CONTROLLER = registerBlock("siren_controller",
+            key -> new SirenControllerBlock(AbstractBlock.Settings.create()
+                    .registryKey(key)
+                    .strength(2.5F)
+                    .sounds(BlockSoundGroup.WOOD)));
     public static final ItemGroup COMMUNICATION_GROUP = Registry.register(Registries.ITEM_GROUP,
             RpVoiceAddon.id("communication"),
             FabricItemGroup.builder()
@@ -42,12 +49,14 @@ public final class ModContent {
                     .entries((context, entries) -> {
                         entries.add(MOBILE_PHONE);
                         entries.add(RADIO);
+                        entries.add(SIREN_PROGRAMMER);
                         entries.add(MAST_BASIS);
                         entries.add(MAST);
                         entries.add(MAST_SIRENE_ZWEI);
                         entries.add(MAST_SIRENE_DREI);
                         entries.add(MAST_MOBILFUNK);
                         entries.add(MAST_DIGITALFUNK);
+                        entries.add(SIREN_CONTROLLER);
                     }).build());
 
     private ModContent() {

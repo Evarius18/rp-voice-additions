@@ -27,6 +27,8 @@ Mobilfunknetz, ohne Simple Voice Chat zu verändern.
 - optionale Reichweitenbegrenzung für Funk
 - modularer Mastbaukasten mit Basis, Segmenten, Signal-, Mobilfunk- und Digitalfunkaufsätzen
 - platzierbare, persistent registrierte Mobilfunkmasten und optionale Digitalfunkrelais
+- verknüpfbare Sirenen mit Feueralarm, Warnung, Entwarnung und Probealarm
+- Sirenensteuerung mit Szenarien, persistenten Terminen sowie Live- und gespeicherten Durchsagen
 - eigene Lautstärkeregler „Telefon“ und „Funk“ in Simple Voice Chat
 - eigenständige Portrait-Handy-GUI und kompakte Funkgerät-GUI
 - konfigurierbare Geräteitems, einschließlich `terranexus:mobile_phone`
@@ -89,6 +91,26 @@ Kanal geroutet.
 Auch das Funkgerät bleibt unten rechts über der unveränderten Spielwelt und nutzt eine
 eigene technische LCD-/Hardwaredarstellung statt des Smartphone-Rasters.
 
+### Sirenen
+
+Die Blöcke `mast_sirene_zwei` und `mast_sirene_drei` sind räumliche Sirenenendpunkte.
+Platziere eine `siren_controller`-Steuerung und öffne sie per Rechtsklick. Über
+„Sirene verbinden“ wird ein Verknüpfungsmodus aktiviert. Dabei muss das
+`siren_programmer`-Programmiergerät in Haupt- oder Nebenhand gehalten werden; der nächste
+Rechtsklick mit dem Gerät auf eine Sirene verbindet oder trennt sie. Die Entfernung zwischen Steuerung und Sirene ist danach
+für die Auslösung unerheblich. Dimensionsübergreifende Verknüpfungen sind standardmäßig aus.
+
+Die Steuerung kann konfigurierte Szenarien sofort auslösen, Signale stoppen und Alarme für
+`HH:mm` oder eine Minutenangabe terminieren. Im Reiter „Durchsagen“ lassen sich Live-Audio
+über alle verbundenen Sirenen übertragen sowie Mikrofonaufnahmen persistent speichern und
+später wiedergeben. Normales räumliches Sprechen wird bei einer Live-Durchsage nicht blockiert.
+
+Signalpegel und maximale Hördistanz werden über `signalGain` und `audibleDistance` in
+`siren.json` geregelt. Ältere 512-Block-Standardkonfigurationen werden einmalig auf die
+realistischere Reichweite von 192 Blöcken migriert. Sound Physics Remastered verarbeitet die
+positionsgebundenen Simple-Voice-Chat-Kanäle automatisch, wenn dessen Option
+„Simple Voice Chat integration“ auf dem Client aktiviert ist.
+
 ### Keybinds und HUD
 
 Die Kategorie „RP Voice Additions“ erscheint unter den Minecraft-Steuerungseinstellungen.
@@ -106,9 +128,8 @@ Funkkanal sowie RX/TX an. Position und sichtbare Bereiche werden in `hud.json` e
 /celltower list
 ```
 
-Beide Befehle benötigen Operator-Level 2. Mobilfunkmasten werden durch Platzieren des
-`rp-vca:mast_mobilfunk`- und `rp-vca:mast_digitalfunk`-Aufsätze werden beim Platzieren
-registriert und beim Abbau wieder entfernt. Die Sirenenvarianten sind derzeit dekorativ.
+Beide Befehle benötigen Operator-Level 2. Die Aufsätze `rp-vca:mast_mobilfunk` und
+`rp-vca:mast_digitalfunk` werden beim Platzieren registriert und beim Abbau wieder entfernt.
 
 ## Konfiguration
 
@@ -122,6 +143,7 @@ Beim ersten Start entstehen unter `config/rp-voice-additions/`:
 - `devices.json` – erlaubte Item-IDs für Handy und Funkgerät
 - `hud.json` – Sichtbarkeit, Position und Anzeigedauer des HUD
 - `compatibility.json` – TerraNexus-Apps und Institution-zu-Funkkanal-Mapping
+- `siren.json` – Reichweite, Rechte, Szenarien, Verknüpfungs-, Termin- und Aufnahmelimits
 - `client.json` – lokale Funklautstärke aus der Funkgeräte-GUI
 
 Mit `phone.requireCoverage=true` benötigen beide Gesprächsteilnehmer Netzabdeckung.
@@ -142,18 +164,26 @@ abgebildet, damit keine RP-Hauptmod oder Permission-Mod zwingend erforderlich is
 
 Spielerdaten und Mastpositionen werden weltbezogen in
 `<Welt>/rp-voice-additions/` gespeichert.
+Sirenen, Steuerungen und Termine liegen in `sirens.json`; gespeicherte Durchsagen werden als
+48-kHz-Mono-PCM unter `<Welt>/rp-voice-additions/announcements/` abgelegt.
 
 ### TerraNexus
 
 Ist die Mod-ID `terranexus` vorhanden, wird die TerraNexus-Anwendungsübersicht als App
 angeboten. Soll zusätzlich ein TerraNexus-Item das RP-VCA-Handy öffnen, kann dessen Item-ID
 in `devices.json` ergänzt werden. Ohne TerraNexus enthält die Standardkonfiguration keinerlei
-TerraNexus-Itemzuweisung oder sichtbare Verknüpfung. Die Kopplung erfolgt reflektiert und wird
-bei einer inkompatiblen oder fehlenden TerraNexus-Version automatisch deaktiviert.
+TerraNexus-Itemzuweisung oder sichtbare Verknüpfung. Die Kopplung erfolgt ausschließlich über
+öffentliche Provider und wird bei einer inkompatiblen oder fehlenden Version automatisch deaktiviert.
 
 `compatibility.json` ordnet Institutions-ID, -Name oder -Typ einer Liste von Funkkanälen zu.
 Ein Spieler erhält Zugriff, wenn irgendeine seiner TerraNexus-Mitgliedschaften auf den
 gewählten Kanal passt. Vanilla-Scoreboard-Teams bleiben parallel als Fallback aktiv.
+
+TerraNexus oder eine andere optionale Mod kann Sirenen ohne interne Klassen oder Reflection
+über `RpVcaApi.getSirenService()` ansteuern. Die API unterstützt Controllerauflistung,
+Szenarioauslösung, Stopp, Terminierung und Live-Durchsagen. RP-VCA bleibt Eigentümer von
+Persistenz, Berechtigungsprüfung und Voice-Routing. Berechtigte Scoreboard-Teams und
+Institutionsschlüssel werden in `siren.json` konfiguriert.
 
 ## Bauen
 
@@ -162,6 +192,23 @@ gewählten Kanal passt. Vanilla-Scoreboard-Teams bleiben parallel als Fallback a
 ```
 
 Das fertige Artefakt liegt anschließend in `build/libs/`.
+
+### Mastmodelle neu erzeugen
+
+Die gelieferten Blockbench-Mastmodelle verwenden das Minecraft-1.21.11-Format mit
+mehrachsigen Elementrotationen. Die installierten Modelle sind für 1.21.8 konvertierte
+Laufzeit-Assets. Nach Änderungen an den Originalen müssen sie erneut erzeugt werden:
+
+```text
+python scripts/convert_blockbench_models.py <Originalordner> \
+  src/main/resources/assets/rp-vca/models/block \
+  --allow-lossy --report-json build/model-converter/mast-report.json
+```
+
+`--allow-lossy` ist bewusst explizit: Fünf kleine Elemente des Mobilfunkaufsatzes sind im
+älteren Vanilla-Modellformat nicht exakt darstellbar. Der Konverter berechnet die beste
+Näherung und dokumentiert deren Geometriefehler. Ein Test verhindert, dass versehentlich
+unkonvertierte 1.21.11-Rotationen als 1.21.8-Ressourcen ausgeliefert werden.
 
 ## Technische Struktur
 

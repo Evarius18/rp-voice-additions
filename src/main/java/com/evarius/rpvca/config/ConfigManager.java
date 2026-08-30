@@ -27,6 +27,7 @@ public final class ConfigManager {
     private volatile DeviceConfig devices;
     private volatile HudConfig hud;
     private volatile CompatibilityConfig compatibility;
+    private volatile SirenConfig siren;
 
     public void load() {
         try {
@@ -39,6 +40,7 @@ public final class ConfigManager {
             devices = read("devices.json", DeviceConfig.class, DeviceConfig::new);
             hud = read("hud.json", HudConfig.class, HudConfig::new);
             compatibility = read("compatibility.json", CompatibilityConfig.class, CompatibilityConfig::new);
+            siren = read("siren.json", SirenConfig.class, SirenConfig::new);
             validate();
             saveAll();
         } catch (IOException exception) {
@@ -193,6 +195,55 @@ public final class ConfigManager {
         compatibility.institutionRadioChannels.replaceAll((key, channels) ->
                 channels.stream().filter(java.util.Objects::nonNull).map(String::trim)
                         .filter(value -> value.matches("[a-zA-Z0-9_.-]+")).distinct().toList());
+        if (siren.configVersion < 2) {
+            // Migrate the original effectively global 512-block default to realistic attenuation.
+            if (Math.abs(siren.audibleDistance - 512.0F) < 0.01F) siren.audibleDistance = 192.0F;
+            siren.configVersion = 2;
+        }
+        siren.audibleDistance = Float.isFinite(siren.audibleDistance)
+                ? Math.clamp(siren.audibleDistance, 16.0F, 4096.0F) : new SirenConfig().audibleDistance;
+        siren.signalGain = Float.isFinite(siren.signalGain)
+                ? Math.clamp(siren.signalGain, 0.01F, 1.0F) : new SirenConfig().signalGain;
+        siren.announcementGain = Float.isFinite(siren.announcementGain)
+                ? Math.clamp(siren.announcementGain, 0.01F, 1.0F) : new SirenConfig().announcementGain;
+        siren.maxLinkedSirensPerController = Math.clamp(siren.maxLinkedSirensPerController, 1, 512);
+        siren.operatePermissionLevel = Math.clamp(siren.operatePermissionLevel, 0, 4);
+        siren.configurePermissionLevel = Math.clamp(siren.configurePermissionLevel, 0, 4);
+        siren.maximumScheduledAlarmsPerController = Math.clamp(
+                siren.maximumScheduledAlarmsPerController, 1, 1_000);
+        siren.maximumAnnouncementSeconds = Math.clamp(siren.maximumAnnouncementSeconds, 5, 600);
+        siren.maximumSavedAnnouncementsPerController = Math.clamp(
+                siren.maximumSavedAnnouncementsPerController, 1, 100);
+        siren.operatorMembershipKeys = cleanPermissionKeys(siren.operatorMembershipKeys,
+                new SirenConfig().operatorMembershipKeys);
+        siren.configurationMembershipKeys = cleanPermissionKeys(siren.configurationMembershipKeys,
+                new SirenConfig().configurationMembershipKeys);
+        if (siren.scenarios == null) {
+            siren.scenarios = new SirenConfig().scenarios;
+        }
+        Set<String> scenarioIds = new HashSet<>();
+        Set<String> signals = Set.of("fire_alarm", "warning", "all_clear", "test");
+        siren.scenarios.removeIf(scenario -> scenario == null || scenario.id == null
+                || !scenario.id.matches("[a-z0-9_.-]{1,32}")
+                || !scenarioIds.add(scenario.id.toLowerCase(Locale.ROOT)));
+        siren.scenarios.forEach(scenario -> {
+            if (scenario.displayName == null || scenario.displayName.isBlank()) {
+                scenario.displayName = scenario.id;
+            }
+            if (scenario.steps == null) {
+                scenario.steps = new java.util.ArrayList<>();
+            }
+            scenario.steps.removeIf(step -> step == null || step.signal == null
+                    || !signals.contains(step.signal.toLowerCase(Locale.ROOT)));
+            scenario.steps.forEach(step -> {
+                step.signal = step.signal.toLowerCase(Locale.ROOT);
+                step.delaySeconds = Math.clamp(step.delaySeconds, 0, 86_400);
+            });
+        });
+        siren.scenarios.removeIf(scenario -> scenario.steps.isEmpty());
+        if (siren.scenarios.isEmpty()) {
+            siren.scenarios = new SirenConfig().scenarios;
+        }
     }
 
     private void saveAll() throws IOException {
@@ -204,6 +255,7 @@ public final class ConfigManager {
         write("devices.json", devices);
         write("hud.json", hud);
         write("compatibility.json", compatibility);
+        write("siren.json", siren);
     }
 
     private void write(String fileName, Object value) throws IOException {
@@ -244,6 +296,10 @@ public final class ConfigManager {
         return compatibility;
     }
 
+    public SirenConfig siren() {
+        return siren;
+    }
+
     private static java.util.List<String> cleanIdentifiers(java.util.List<String> values,
                                                             java.util.List<String> fallback) {
         values.stream().filter(java.util.Objects::nonNull).map(String::trim)
@@ -253,5 +309,14 @@ public final class ConfigManager {
                 .map(String::trim).filter(value -> value.matches("[a-z0-9_.-]+:[a-z0-9_./-]+"))
                 .distinct().toList();
         return cleaned.isEmpty() ? new java.util.ArrayList<>(fallback) : new java.util.ArrayList<>(cleaned);
+    }
+
+    private static java.util.List<String> cleanPermissionKeys(java.util.List<String> values,
+                                                               java.util.List<String> fallback) {
+        if (values == null) return new java.util.ArrayList<>(fallback);
+        return new java.util.ArrayList<>(values.stream().filter(java.util.Objects::nonNull)
+                .map(value -> value.trim().toLowerCase(Locale.ROOT))
+                .filter(value -> value.matches("[a-z0-9_.-]{1,64}"))
+                .distinct().toList());
     }
 }

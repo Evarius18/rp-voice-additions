@@ -52,6 +52,9 @@ public class RpVoiceAddon implements ModInitializer {
 		ServerLifecycleEvents.SERVER_STOPPED.register(server -> RpVoiceServices.stop());
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			RpVoiceServices services = RpVoiceServices.get();
+			if (services != null) {
+				services.sirens().tick();
+			}
 			if (services != null && server.getTicks() % 20 == 0) {
 				services.phones().tick();
 				server.getPlayerManager().getPlayerList().forEach(CommunicationNetworking::sync);
@@ -69,6 +72,7 @@ public class RpVoiceAddon implements ModInitializer {
 			if (services != null) {
 				services.phones().onDisconnect(handler.player.getUuid());
 				services.radios().onDisconnect(handler.player.getUuid());
+				services.sirens().onDisconnect(handler.player.getUuid());
 			}
 		});
 	}

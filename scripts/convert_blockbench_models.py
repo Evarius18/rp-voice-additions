@@ -1,26 +1,30 @@
-"""Convert the supplied Blockbench mast exports to vanilla 1.21.8 block models.
+"""Install supplied Minecraft 1.21.11 mast models as validated 1.21.8 models.
 
-Blockbench's generic export may contain free Euler rotations. Vanilla block models only
-accept a single axis and the angles -45, -22.5, 0, 22.5 or 45 degrees. Right-angle parts
-are baked into their bounds; remaining rotations are quantized to the nearest supported
-angle. Multi-axis rotations are conservatively baked into an axis-aligned bounding box.
+The generic geometry conversion lives in :mod:`model_converter`. It compares the
+eight transformed corners of every cuboid and only emits a classic 1.21.8 element
+rotation. Five decorative antenna elements in ``mast_mobielfunk.json`` cannot be
+represented exactly by the older format; generating them therefore requires the
+explicit ``--allow-lossy`` option and records their measured error in a report.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import math
 from pathlib import Path
 
-MODEL_NAMES = (
-    "mast_basis",
-    "mast",
-    "mast_sirene_zwei",
-    "mast_sirene_drei",
-    "mast_mobilfunk",
-    "mast_digitalfunk",
-)
+from model_converter import convert_document, load_model
+
+
+SOURCE_MODELS = {
+    "mast_basis.json": "mast_basis.json",
+    "mast.json": "mast.json",
+    "mast_siene_zwei.json": "mast_sirene_zwei.json",
+    "mast_siene_drei.json": "mast_sirene_drei.json",
+    "mast_mobielfunk.json": "mast_mobilfunk.json",
+    "mast_digitalfunk.json": "mast_digitalfunk.json",
+}
+
 TEXTURES = {
     "light_gray_concrete_powder": "rp-vca:block/mast/light_gray_concrete_powder",
     "gray_concrete_powder": "rp-vca:block/mast/gray_concrete_powder",
@@ -28,98 +32,87 @@ TEXTURES = {
 }
 
 
-def rotate(point: list[float], origin: list[float], axis: str, degrees: float) -> list[float]:
-    radians = math.radians(degrees)
-    cosine, sine = math.cos(radians), math.sin(radians)
-    x, y, z = (point[index] - origin[index] for index in range(3))
-    if axis == "x":
-        y, z = y * cosine - z * sine, y * sine + z * cosine
-    elif axis == "y":
-        x, z = x * cosine + z * sine, -x * sine + z * cosine
-    else:
-        x, y = x * cosine - y * sine, x * sine + y * cosine
-    return [x + origin[0], y + origin[1], z + origin[2]]
+def write_json(path: Path, value: object) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def corners(element: dict) -> list[list[float]]:
-    return [
-        [x, y, z]
-        for x in (element["from"][0], element["to"][0])
-        for y in (element["from"][1], element["to"][1])
-        for z in (element["from"][2], element["to"][2])
-    ]
+def install_textures(document: dict) -> None:
+    textures = document.setdefault("textures", {})
+    for key, value in list(textures.items()):
+        if isinstance(value, str) and not value.startswith("#"):
+            textures[key] = TEXTURES.get(value, value)
+    if "particle" not in textures:
+        first = next((value for value in textures.values() if isinstance(value, str)), None)
+        if first is not None:
+            textures["particle"] = first
 
 
-def set_bounds(element: dict, points: list[list[float]]) -> None:
-    element["from"] = [round(min(point[index] for point in points), 5) for index in range(3)]
-    element["to"] = [round(max(point[index] for point in points), 5) for index in range(3)]
-
-
-def convert_rotation(element: dict) -> None:
-    rotation = element.get("rotation")
-    if not rotation:
-        return
-    if "axis" in rotation:
-        angle = round(float(rotation.get("angle", 0.0)) / 22.5) * 22.5
-        if abs(angle) < 0.00001:
-            element.pop("rotation", None)
-        else:
-            rotation["angle"] = max(-45.0, min(45.0, angle))
-        return
-
-    origin = [float(value) for value in rotation.get("origin", (8, 8, 8))]
-    active_axes = [axis for axis in "xyz" if abs(float(rotation.get(axis, 0.0))) > 0.00001]
-    points = corners(element)
-    if len(active_axes) == 1:
-        axis = active_axes[0]
-        angle = float(rotation[axis])
-        quarter_turn = round(angle / 90.0)
-        baked_angle = quarter_turn * 90.0
-        if baked_angle:
-            points = [rotate(point, origin, axis, baked_angle) for point in points]
-            set_bounds(element, points)
-        residual = angle - baked_angle
-        quantized = round(residual / 22.5) * 22.5
-        if abs(quantized) < 0.00001:
-            element.pop("rotation", None)
-        else:
-            element["rotation"] = {"angle": quantized, "axis": axis, "origin": origin}
-        return
-
-    # Vanilla cannot express a free multi-axis cuboid. Baking its transformed outer
-    # bounds keeps its position and visible volume without requiring a custom renderer.
-    for axis in "xyz":
-        angle = float(rotation.get(axis, 0.0))
-        if angle:
-            points = [rotate(point, origin, axis, angle) for point in points]
-    set_bounds(element, points)
-    element.pop("rotation", None)
-
-
-def convert(source: Path, target: Path) -> None:
-    model = json.loads(source.read_text(encoding="utf-8-sig"))
-    model.pop("format_version", None)
-    model.pop("groups", None)
-    model["textures"] = {
-        key: TEXTURES.get(value, value) for key, value in model.get("textures", {}).items()
-    }
-    for element in model.get("elements", []):
-        convert_rotation(element)
+def normalize_1218_document(document: dict) -> None:
+    # Blockbench metadata stays in the editable source and does not belong in the
+    # vanilla 1.21.8 runtime model. Groups also reference source element indices.
+    document.pop("format_version", None)
+    document.pop("groups", None)
+    install_textures(document)
+    for element in document.get("elements", []):
         for face in element.get("faces", {}).values():
             if face.get("texture") == "#missing":
                 face["texture"] = "#0"
-    target.write_text(json.dumps(model, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("target", type=Path)
+    parser.add_argument("--tolerance", type=float, default=0.01)
+    parser.add_argument("--allow-lossy", action="store_true")
+    parser.add_argument("--report-json", type=Path)
     args = parser.parse_args()
-    args.target.mkdir(parents=True, exist_ok=True)
-    for name in MODEL_NAMES:
-        convert(args.source / f"{name}.json", args.target / f"{name}.json")
+
+    reports: list[dict] = []
+    failed = False
+    for source_name, target_name in SOURCE_MODELS.items():
+        source_path = args.source / source_name
+        if not source_path.is_file():
+            raise FileNotFoundError(f"Missing supplied mast model: {source_path}")
+        converted, report = convert_document(
+            load_model(source_path),
+            model_name=source_name,
+            tolerance=args.tolerance,
+            allow_lossy=args.allow_lossy,
+        )
+        reports.append({"target": target_name, **report.to_dict()})
+        print(
+            f"{source_name} -> {target_name}: elements={report.elements}, "
+            f"warnings={report.warnings}, failures={report.failures}, "
+            f"max_error={report.maximum_geometry_error:.10g}"
+        )
+        if not report.successful:
+            failed = True
+            continue
+        normalize_1218_document(converted)
+        write_json(args.target / target_name, converted)
+
+    combined = {
+        "source_format": "1.21.11",
+        "target_format": "1.21.8",
+        "tolerance": args.tolerance,
+        "allow_lossy": args.allow_lossy,
+        "models": reports,
+        "failures": sum(report["failures"] for report in reports),
+        "warnings": sum(report["warnings"] for report in reports),
+        "maximum_geometry_error": max(
+            (report["maximum_geometry_error"] for report in reports), default=0.0
+        ),
+    }
+    if args.report_json:
+        write_json(args.report_json, combined)
+    return 2 if failed else 0
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        raise SystemExit(main())
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        print(f"mast model conversion failed: {error}")
+        raise SystemExit(1)

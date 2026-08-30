@@ -53,6 +53,7 @@ public final class RpVoicechatPlugin implements VoicechatPlugin {
                 .setName("Telefon")
                 .setDescription("Telefonanrufe von RP Voice Additions")
                 .build());
+        SirenVoiceEngine.attach(api);
         api.registerVolumeCategory(api.volumeCategoryBuilder()
                 .setId(RADIO_CATEGORY)
                 .setName("Funk")
@@ -90,6 +91,7 @@ public final class RpVoicechatPlugin implements VoicechatPlugin {
         }
         routePhone(event, services, voiceApi, sender);
         routeRadio(event, services, voiceApi, sender);
+        SirenVoiceEngine.handleMicrophone(senderId, event.getPacket());
     }
 
     private void routePhone(MicrophonePacketEvent event, RpVoiceServices services,
@@ -179,6 +181,7 @@ public final class RpVoicechatPlugin implements VoicechatPlugin {
         phoneChannels.clear();
         speakerChannels.clear();
         radioChannels.clear();
+        SirenVoiceEngine.detach();
         api = null;
     }
 }

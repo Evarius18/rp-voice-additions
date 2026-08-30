@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "rp-vca:block/siren_controller" }
+  }
+}
