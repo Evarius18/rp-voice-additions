@@ -1,46 +1,46 @@
 # RP Voice Additions
 
-RP Voice Additions ist eine eigenständige Fabric-Erweiterung für
-[Simple Voice Chat](https://modrepo.de/minecraft/voicechat/overview). Die Mod ergänzt
-konfigurierbare Sprechreichweiten, Telefone, Notrufnummern, Funkkanäle und ein optionales
-Mobilfunknetz, ohne Simple Voice Chat zu verändern.
+RP Voice Additions is a standalone Fabric extension for
+[Simple Voice Chat](https://modrepo.de/minecraft/voicechat/overview). The mod adds
+configurable speaking ranges, phones, emergency numbers, radio channels, and an optional
+cellular network without modifying Simple Voice Chat.
 
-## Voraussetzungen
+## Requirements
 
-- Minecraft 1.21.8
-- Java 21
-- Fabric Loader 0.19.3 oder neuer
-- Fabric API
-- Simple Voice Chat mit API 2.6.20 oder neuer, auf Client und Server
+* Minecraft 1.21.8
+* Java 21
+* Fabric Loader 0.19.3 or newer
+* Fabric API
+* Simple Voice Chat with API 2.6.20 or newer, on both client and server
 
-## Funktionen
+## Features
 
-- Sprechmodi `quiet`, `normal`, `shout` und `scream` mit serverseitigen Reichweiten
-- Mobiltelefon-Item mit persistent zugewiesener Rufnummer und Kontakten
-- direkte Anrufe über Spielername, Rufnummer oder Kontaktname
-- serverseitig validierte Kontaktverwaltung und persistente Anrufhistorie
-- konfigurierbare, eindeutige Telefonnummern nach Vorwahl-/Ziffernschema
-- Annehmen, Ablehnen, Auflegen sowie privater Hörer- und räumlicher Lautsprechermodus
-- frei konfigurierbare Notrufnummern und Weiterleitung an Spieler eines Scoreboard-Teams
-- Funkgerät mit konfigurierbaren, optional teamgeschützten Kanälen
-- umschaltbare Funkübertragung (TX) bei weiterhin hörbarer Umgebung
-- optionale Reichweitenbegrenzung für Funk
-- modularer Mastbaukasten mit Basis, Segmenten, Signal-, Mobilfunk- und Digitalfunkaufsätzen
-- platzierbare, persistent registrierte Mobilfunkmasten und optionale Digitalfunkrelais
-- verknüpfbare Sirenen mit Feueralarm, Warnung, Entwarnung und Probealarm
-- Sirenensteuerung mit Szenarien, persistenten Terminen sowie Live- und gespeicherten Durchsagen
-- eigene Lautstärkeregler „Telefon“ und „Funk“ in Simple Voice Chat
-- eigenständige Portrait-Handy-GUI und kompakte Funkgerät-GUI
-- konfigurierbare Geräteitems, einschließlich `terranexus:mobile_phone`
-- registrierte Minecraft-Keybinds und konfigurierbares Kommunikations-HUD
-- optionale TerraNexus-Handy-App und institutionsbasierte Funkrechte
+* Speaking modes `quiet`, `normal`, `shout`, and `scream` with server-side ranges
+* Mobile phone item with a persistently assigned phone number and contacts
+* Direct calls via player name, phone number, or contact name
+* Server-side validated contact management and persistent call history
+* Configurable, unique phone numbers based on area-code/digit schemes
+* Answering, declining, hanging up, as well as private earpiece and spatial speaker modes
+* Freely configurable emergency numbers and forwarding to players on a scoreboard team
+* Radio with configurable, optionally team-protected channels
+* Toggleable radio transmission (TX) while ambient audio remains audible
+* Optional range limitation for radio
+* Modular mast construction system with base, segments, signal, cellular, and digital-radio attachments
+* Placeable, persistently registered cellular towers and optional digital-radio relays
+* Linkable sirens with fire alarm, warning, all-clear, and test alarm
+* Siren control with scenarios, persistent schedules, and live or saved announcements
+* Dedicated “Phone” and “Radio” volume controls in Simple Voice Chat
+* Standalone portrait phone GUI and compact radio GUI
+* Configurable device items, including `terranexus:mobile_phone`
+* Registered Minecraft keybinds and configurable communication HUD
+* Optional TerraNexus phone app and institution-based radio permissions
 
-Das normale Umgebungsgespräch wird bei Telefon- und Funkübertragungen nicht unterdrückt.
-Menschen in der Nähe hören den Sprecher deshalb weiterhin räumlich.
+Normal proximity voice chat is not suppressed during phone or radio transmissions.
+Nearby players therefore continue to hear the speaker spatially.
 
-## Bedienung
+## Usage
 
-### Sprechen
+### Speaking
 
 ```text
 /rpvoice
@@ -48,78 +48,81 @@ Menschen in der Nähe hören den Sprecher deshalb weiterhin räumlich.
 /rpvoice range <quiet|normal|shout|scream>
 ```
 
-Natives Flüstern von Simple Voice Chat bleibt erhalten und wird von den zusätzlichen Modi
-nicht überschrieben. `WHISPER` kann in `speech.json` Teil der Durchschaltreihenfolge sein.
-Da die öffentliche Simple-Voice-Chat-API 2.6.20 keinen Setter für den Mikrofon-Flüsterzustand
-anbietet, wird dafür weiterhin die native SVC-Flüstertaste verwendet. RP-VCA erkennt den
-echten Paketstatus serverseitig und zeigt im HUD an, wenn die SVC-Taste noch erforderlich ist.
+Native whispering from Simple Voice Chat remains available and is not overridden by the additional modes.
+`WHISPER` can be part of the switching sequence in `speech.json`.
+Because the public Simple Voice Chat API 2.6.20 does not provide a setter for the microphone whisper state,
+the native SVC whisper key is still used for this. RP-VCA detects the actual packet state on the server side
+and indicates in the HUD when the SVC key is still required.
 
-### Telefon
+### Phone
 
 ```text
 /phone
-/phone call <Spieler|Nummer|Kontakt>
+/phone call <Player|Number|Contact>
 /phone answer
 /phone decline
 /phone hangup
 /phone speaker
 /phone contacts
-/phone contacts add <Name> <Nummer>
+/phone contacts add <Name> <Number>
 /phone contacts remove <Name>
 ```
 
-Ein Rechtsklick mit einem konfigurierten Telefon öffnet die Portrait-GUI. Dort stehen
-Wählfeld, Kontakte, Notruf, Anrufhistorie, Gesprächssteuerung und optionale Apps zur Verfügung.
-Kontakte sowie einzelne Historieneinträge können direkt verwaltet werden. Vor dem vollständigen
-Leeren der Historie ist eine zweite Bestätigung erforderlich.
-Die Oberfläche erscheint als unverwischtes Handgerät unten rechts; TerraNexus-Apps werden
-nur eingeblendet, wenn die serverseitige optionale Integration tatsächlich verfügbar ist.
+Right-clicking with a configured phone opens the portrait GUI. It provides a dial pad,
+contacts, emergency calling, call history, call controls, and optional apps.
+Contacts and individual history entries can be managed directly. A second confirmation
+is required before completely clearing the history.
 
-### Funk
+The interface appears as a non-blurred handheld device in the bottom-right corner;
+TerraNexus apps are shown only when the optional server-side integration is actually available.
+
+### Radio
 
 ```text
 /radio
 /radio channels
-/radio tune <Kanal>
+/radio tune <Channel>
 /radio transmit
 /radio off
 ```
 
-Ein Rechtsklick mit einem konfigurierten Funkgerät öffnet die kompakte Funkoberfläche.
-Nur während TX beziehungsweise gedrückter Funk-PTT-Taste wird die eigene Stimme auf den
-Kanal geroutet.
-Auch das Funkgerät bleibt unten rechts über der unveränderten Spielwelt und nutzt eine
-eigene technische LCD-/Hardwaredarstellung statt des Smartphone-Rasters.
+Right-clicking with a configured radio opens the compact radio interface.
+The player's own voice is routed to the channel only while TX is active or while the
+radio PTT key is held down.
 
-### Sirenen
+The radio also remains in the bottom-right corner over the unchanged game world and uses
+its own technical LCD/hardware-style presentation instead of the smartphone grid.
 
-Die Blöcke `mast_sirene_zwei` und `mast_sirene_drei` sind räumliche Sirenenendpunkte.
-Platziere eine `siren_controller`-Steuerung und öffne sie per Rechtsklick. Über
-„Sirene verbinden“ wird ein Verknüpfungsmodus aktiviert. Dabei muss das
-`siren_programmer`-Programmiergerät in Haupt- oder Nebenhand gehalten werden; der nächste
-Rechtsklick mit dem Gerät auf eine Sirene verbindet oder trennt sie. Die Entfernung zwischen Steuerung und Sirene ist danach
-für die Auslösung unerheblich. Dimensionsübergreifende Verknüpfungen sind standardmäßig aus.
+### Sirens
 
-Die Steuerung kann konfigurierte Szenarien sofort auslösen, Signale stoppen und Alarme für
-`HH:mm` oder eine Minutenangabe terminieren. Im Reiter „Durchsagen“ lassen sich Live-Audio
-über alle verbundenen Sirenen übertragen sowie Mikrofonaufnahmen persistent speichern und
-später wiedergeben. Normales räumliches Sprechen wird bei einer Live-Durchsage nicht blockiert.
+The `mast_sirene_zwei` and `mast_sirene_drei` blocks are spatial siren endpoints.
+Place a `siren_controller` and open it by right-clicking. Selecting
+“Connect Siren” activates linking mode. The `siren_programmer` programming device
+must be held in either the main hand or off-hand; the next right-click with the device
+on a siren links or unlinks it. The distance between the controller and siren is irrelevant
+afterwards. Cross-dimensional links are disabled by default.
 
-Signalpegel und maximale Hördistanz werden über `signalGain` und `audibleDistance` in
-`siren.json` geregelt. Ältere 512-Block-Standardkonfigurationen werden einmalig auf die
-realistischere Reichweite von 192 Blöcken migriert. Sound Physics Remastered verarbeitet die
-positionsgebundenen Simple-Voice-Chat-Kanäle automatisch, wenn dessen Option
-„Simple Voice Chat integration“ auf dem Client aktiviert ist.
+The controller can immediately trigger configured scenarios, stop signals, and schedule alarms
+for an `HH:mm` time or a specified number of minutes. In the “Announcements” tab,
+live audio can be transmitted through all connected sirens, while microphone recordings
+can be stored persistently and played back later. Normal spatial speech is not blocked
+during a live announcement.
 
-### Keybinds und HUD
+Signal level and maximum audible distance are controlled using `signalGain` and
+`audibleDistance` in `siren.json`. Older default configurations using a 512-block range
+are migrated once to the more realistic range of 192 blocks. Sound Physics Remastered
+automatically processes the position-based Simple Voice Chat channels when its
+“Simple Voice Chat integration” option is enabled on the client.
 
-Die Kategorie „RP Voice Additions“ erscheint unter den Minecraft-Steuerungseinstellungen.
-Standardmäßig sind Akzenttaste für den Sprachmodus, `P` für das Handy, `R` für das
-Funkgerät und linkes `Alt` für Funk-PTT belegt. Direktmodi und Gesprächstasten sind zunächst
-unbelegt, damit keine bestehenden Tasten überschrieben werden.
+### Keybinds and HUD
 
-Das HUD zeigt Sprechmodus, Reichweite, Anrufzustand, Gesprächsgegenstelle, Lautsprecher,
-Funkkanal sowie RX/TX an. Position und sichtbare Bereiche werden in `hud.json` eingestellt.
+The “RP Voice Additions” category appears in the Minecraft controls settings.
+By default, the accent key is assigned to the speech mode, `P` to the phone, `R` to the
+radio, and left `Alt` to radio PTT. Direct modes and call-control keys are initially
+unassigned so that no existing keybindings are overwritten.
+
+The HUD displays the speaking mode, range, call status, remote call participant, speaker mode,
+radio channel, and RX/TX status. Its position and visible sections are configured in `hud.json`.
 
 ### Administration
 
@@ -128,128 +131,127 @@ Funkkanal sowie RX/TX an. Position und sichtbare Bereiche werden in `hud.json` e
 /celltower list
 ```
 
-Beide Befehle benötigen Operator-Level 2. Die Aufsätze `rp-vca:mast_mobilfunk` und
-`rp-vca:mast_digitalfunk` werden beim Platzieren registriert und beim Abbau wieder entfernt.
+Both commands require operator level 2. The `rp-vca:mast_mobilfunk` and
+`rp-vca:mast_digitalfunk` attachments are registered when placed and removed from the registry
+when broken.
 
-## Konfiguration
+## Configuration
 
-Beim ersten Start entstehen unter `config/rp-voice-additions/`:
+On first launch, the following files are created under `config/rp-voice-additions/`:
 
-- `speech.json` – Sprachmodi und Reichweiten
-- `phone.json` – Telefon, Rufnummernlänge, Klingeldauer und Lautsprecherreichweite
-- `emergency.json` – Notrufnummern und zuständige Scoreboard-Teams
-- `radio.json` – Funkkanäle, Teamzugriff, Dimensionsgrenze und optionale Maximalreichweite
-- `infrastructure.json` – Aktivierung und Reichweite des Mobilfunknetzes
-- `devices.json` – erlaubte Item-IDs für Handy und Funkgerät
-- `hud.json` – Sichtbarkeit, Position und Anzeigedauer des HUD
-- `compatibility.json` – TerraNexus-Apps und Institution-zu-Funkkanal-Mapping
-- `siren.json` – Reichweite, Rechte, Szenarien, Verknüpfungs-, Termin- und Aufnahmelimits
-- `client.json` – lokale Funklautstärke aus der Funkgeräte-GUI
+* `speech.json` – speech modes and ranges
+* `phone.json` – phone settings, phone-number length, ring duration, and speaker range
+* `emergency.json` – emergency numbers and responsible scoreboard teams
+* `radio.json` – radio channels, team access, dimension restrictions, and optional maximum range
+* `infrastructure.json` – activation and range of the cellular network
+* `devices.json` – allowed item IDs for phones and radios
+* `hud.json` – HUD visibility, position, and display duration
+* `compatibility.json` – TerraNexus apps and institution-to-radio-channel mapping
+* `siren.json` – range, permissions, scenarios, linking, scheduling, and recording limits
+* `client.json` – local radio volume from the radio GUI
 
-Mit `phone.requireCoverage=true` benötigen beide Gesprächsteilnehmer Netzabdeckung.
-`infrastructure.enabled=true` aktiviert die Prüfung gegen `mast_mobilfunk`. Bei Ausfall
-der Abdeckung wird ein laufendes Gespräch getrennt.
+With `phone.requireCoverage=true`, both call participants require network coverage.
+`infrastructure.enabled=true` enables the coverage check against `mast_mobilfunk`.
+If coverage is lost, an active call is disconnected.
 
-Mit `digitalRadioRelaysEnabled=true` erweitert `mast_digitalfunk` begrenzte Funkkanäle.
-Sender und Empfänger müssen jeweils innerhalb `digitalRadioRelayRange` eines registrierten
-Digitalfunkaufsatzes liegen. Bei `radio.maximumRange=0` bleibt Funk wie bisher unbegrenzt.
+With `digitalRadioRelaysEnabled=true`, `mast_digitalfunk` extends range-limited radio channels.
+The sender and receiver must each be within `digitalRadioRelayRange` of a registered
+digital-radio attachment. If `radio.maximumRange=0`, radio remains unlimited as before.
 
-Geschützte Notruf- und Funkrollen werden absichtlich über Vanilla-Scoreboard-Teams
-abgebildet, damit keine RP-Hauptmod oder Permission-Mod zwingend erforderlich ist:
+Protected emergency and radio roles are deliberately implemented using vanilla scoreboard teams
+so that neither a main RP mod nor a permissions mod is mandatory:
 
 ```text
 /team add police
-/team join police <Spieler>
+/team join police <Player>
 ```
 
-Spielerdaten und Mastpositionen werden weltbezogen in
-`<Welt>/rp-voice-additions/` gespeichert.
-Sirenen, Steuerungen und Termine liegen in `sirens.json`; gespeicherte Durchsagen werden als
-48-kHz-Mono-PCM unter `<Welt>/rp-voice-additions/announcements/` abgelegt.
+Player data and mast positions are stored per world in
+`<World>/rp-voice-additions/`.
+Sirens, controllers, and schedules are stored in `sirens.json`; saved announcements are stored
+as 48 kHz mono PCM under `<World>/rp-voice-additions/announcements/`.
 
 ### TerraNexus
 
-Ist die Mod-ID `terranexus` vorhanden, wird die TerraNexus-Anwendungsübersicht als App
-angeboten. Soll zusätzlich ein TerraNexus-Item das RP-VCA-Handy öffnen, kann dessen Item-ID
-in `devices.json` ergänzt werden. Ohne TerraNexus enthält die Standardkonfiguration keinerlei
-TerraNexus-Itemzuweisung oder sichtbare Verknüpfung. Die Kopplung erfolgt ausschließlich über
-öffentliche Provider und wird bei einer inkompatiblen oder fehlenden Version automatisch deaktiviert.
+If the mod ID `terranexus` is present, the TerraNexus application overview is offered as an app.
+If a TerraNexus item should additionally open the RP-VCA phone, its item ID can be added
+to `devices.json`. Without TerraNexus, the default configuration contains no TerraNexus
+item assignment or visible integration. Integration is performed exclusively through public
+providers and is automatically disabled if the version is missing or incompatible.
 
-`compatibility.json` ordnet Institutions-ID, -Name oder -Typ einer Liste von Funkkanälen zu.
-Ein Spieler erhält Zugriff, wenn irgendeine seiner TerraNexus-Mitgliedschaften auf den
-gewählten Kanal passt. Vanilla-Scoreboard-Teams bleiben parallel als Fallback aktiv.
+`compatibility.json` maps an institution ID, name, or type to a list of radio channels.
+A player receives access if any of their TerraNexus memberships matches the selected channel.
+Vanilla scoreboard teams remain active in parallel as a fallback.
 
-TerraNexus oder eine andere optionale Mod kann Sirenen ohne interne Klassen oder Reflection
-über `RpVcaApi.getSirenService()` ansteuern. Die API unterstützt Controllerauflistung,
-Szenarioauslösung, Stopp, Terminierung und Live-Durchsagen. RP-VCA bleibt Eigentümer von
-Persistenz, Berechtigungsprüfung und Voice-Routing. Berechtigte Scoreboard-Teams und
-Institutionsschlüssel werden in `siren.json` konfiguriert.
+TerraNexus or another optional mod can control sirens without internal classes or reflection
+through `RpVcaApi.getSirenService()`. The API supports controller listing, scenario triggering,
+stopping, scheduling, and live announcements. RP-VCA remains responsible for persistence,
+permission checks, and voice routing. Authorized scoreboard teams and institution keys
+are configured in `siren.json`.
 
-## Bauen
+## Building
 
 ```text
 ./gradlew build
 ```
 
-Das fertige Artefakt liegt anschließend in `build/libs/`.
+The finished artifact is then located in `build/libs/`.
 
-### Mastmodelle neu erzeugen
+### Regenerating Mast Models
 
-Die gelieferten Blockbench-Mastmodelle verwenden das Minecraft-1.21.11-Format mit
-mehrachsigen Elementrotationen. Die installierten Modelle sind für 1.21.8 konvertierte
-Laufzeit-Assets. Nach Änderungen an den Originalen müssen sie erneut erzeugt werden:
+The supplied Blockbench mast models use the Minecraft 1.21.11 format with multi-axis
+element rotations. The installed models are runtime assets converted for 1.21.8.
+After modifying the originals, they must be regenerated:
 
 ```text
-python scripts/convert_blockbench_models.py <Originalordner> \
+python scripts/convert_blockbench_models.py <OriginalFolder> \
   src/main/resources/assets/rp-vca/models/block \
   --allow-lossy --report-json build/model-converter/mast-report.json
 ```
 
-`--allow-lossy` ist bewusst explizit: Fünf kleine Elemente des Mobilfunkaufsatzes sind im
-älteren Vanilla-Modellformat nicht exakt darstellbar. Der Konverter berechnet die beste
-Näherung und dokumentiert deren Geometriefehler. Ein Test verhindert, dass versehentlich
-unkonvertierte 1.21.11-Rotationen als 1.21.8-Ressourcen ausgeliefert werden.
+`--allow-lossy` is deliberately explicit: five small elements of the cellular attachment
+cannot be represented exactly in the older vanilla model format. The converter calculates
+the best approximation and documents the resulting geometry errors. A test prevents
+unconverted 1.21.11 rotations from accidentally being shipped as 1.21.8 resources.
 
-## Technische Struktur
+## Technical Structure
 
-Simple Voice Chat liefert die Mikrofonpakete. Eine zentrale serverseitige Routing-Schicht
-leitet dasselbe Opus-Paket zusätzlich an private Telefonkanäle, räumliche
-Lautsprecherkanäle oder Funkempfänger weiter. Telefon-, Funk-, Infrastruktur- und
-Sprechzustand bleiben getrennte Dienste und greifen nur über klar definierte Abfragen
-aufeinander zu.
+Simple Voice Chat provides the microphone packets. A central server-side routing layer
+additionally forwards the same Opus packet to private phone channels, spatial speaker channels,
+or radio recipients. Phone, radio, infrastructure, and speaking state remain separate services
+and interact only through clearly defined queries.
 
-## Einfache Erweiterungspunkte
+## Simple Extension Points
 
-- Weitere Handy-Apps implementieren `PhoneIntegration` und werden über den
-  `CompatibilityManager` bereitgestellt.
-- Weitere Rechtequellen können im `RadioPermissionResolver` kombiniert werden.
-- Neue Client-Aktionen werden als serverseitig validierte `DeviceActionPayload`-Aktionen
-  ergänzt.
-- Verschlüsselung und Relais können auf den bestehenden
-  kanalbezogenen Voice-Chat-Kategorien aufbauen.
+* Additional phone apps implement `PhoneIntegration` and are provided through the
+  `CompatibilityManager`.
+* Additional permission sources can be combined in the `RadioPermissionResolver`.
+* New client actions are added as server-side validated `DeviceActionPayload` actions.
+* Encryption and relays can build on the existing channel-based voice-chat categories.
 
-## Öffentliche Integrations-API
+## Public Integration API
 
-Optionale Mods können nach einem Fabric-Mod-Loaded-Check über
-`RpVcaApi.getPhoneService()` auf den laufenden `PhoneService` zugreifen. Öffentliche
-Methoden stehen für Kontaktmutationen, unveränderliche Kontakt- und Historienansichten,
-Historienlöschung, Telefonnummernvergabe und Gesprächssteuerung bereit. Interne
-`PlayerProfiles`-Objekte werden nicht über den Service-Locator freigegeben.
+Optional mods can access the active `PhoneService` through
+`RpVcaApi.getPhoneService()` after performing a Fabric mod-loaded check. Public methods
+are available for contact mutations, immutable contact and history views, history clearing,
+phone-number assignment, and call control. Internal `PlayerProfiles` objects are not exposed
+through the service locator.
 
-Institutionsmods können Funkmitgliedschaften über
-`RpVcaApi.registerInstitutionMembershipProvider(...)` bereitstellen. RP-VCA greift dafür
-weder per Reflection noch direkt auf fremde Speicherklassen zu. Optionale Geräte, Apps und
-Institutionsschlüssel werden über öffentliche Provider in `RpVcaApi` registriert.
+Institution mods can provide radio memberships through
+`RpVcaApi.registerInstitutionMembershipProvider(...)`. RP-VCA does not use reflection
+or directly access storage classes belonging to other mods. Optional devices, apps,
+and institution keys are registered through public providers in `RpVcaApi`.
 
-Die Spielerdatei besitzt ab Schema 2 zusätzlich `callHistory`. Bestehende Profile ohne dieses
-Feld werden beim Laden mit einer leeren Liste migriert; vorhandene Nummern und Kontakte
-bleiben erhalten.
+Starting with schema 2, the player file additionally contains `callHistory`. Existing profiles
+without this field are migrated with an empty list when loaded; existing numbers and contacts
+are preserved.
 
-Administrative Historienlöschung:
+Administrative history clearing:
 
 ```text
-/rpvoice phone history clear <Spieler>
+/rpvoice phone history clear <Player>
 /rpvoice phone history clear-all
 ```
 
-Das benötigte Operator-Level wird in `phone.json` über `historyAdminPermissionLevel` konfiguriert.
+The required operator level is configured in `phone.json` using
+`historyAdminPermissionLevel`.
