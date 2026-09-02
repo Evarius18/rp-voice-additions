@@ -23,10 +23,10 @@
 	},
 	"depends": {
 		"fabricloader": ">=0.19.3",
-		"minecraft": "~1.21.8",
+		"minecraft": "~1.21.9",
 		"java": ">=21",
 		"fabric-api": "*",
-		"voicechat_api": ">=2.6.20"
+		"voicechat_api": ">=2.6.4"
 	},
 	"suggests": {
 		"sound_physics_remastered": "*"

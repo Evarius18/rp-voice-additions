@@ -117,13 +117,13 @@ public final class RadioService {
                 || !canOperate(receiver) || sender.getUuid().equals(receiver.getUuid())) {
             return false;
         }
-        if (config.requireSameDimension && sender.getWorld() != receiver.getWorld()) {
+        if (config.requireSameDimension && sender.getEntityWorld() != receiver.getEntityWorld()) {
             return false;
         }
         if (config.maximumRange <= 0.0D) {
             return true;
         }
-        if (sender.getWorld() == receiver.getWorld()
+        if (sender.getEntityWorld() == receiver.getEntityWorld()
                 && sender.squaredDistanceTo(receiver) <= config.maximumRange * config.maximumRange) {
             return true;
         }

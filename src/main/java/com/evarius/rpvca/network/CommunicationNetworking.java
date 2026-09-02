@@ -80,7 +80,7 @@ public final class CommunicationNetworking {
                 try {
                     services.phones().removeHistoryEntry(player, java.util.UUID.fromString(value));
                 } catch (IllegalArgumentException ignored) {
-                    RpVoiceAddon.LOGGER.warn("Ungültige Historien-ID von {}", player.getGameProfile().getName());
+                    RpVoiceAddon.LOGGER.warn("Ungültige Historien-ID von {}", player.getGameProfile().name());
                 }
             }
             case "history_clear" -> services.phones().clearOwnCallHistory(player);
@@ -123,7 +123,7 @@ public final class CommunicationNetworking {
                 if (app != null && app.available(player)) app.open(player);
             }
             default -> RpVoiceAddon.LOGGER.warn("Unbekannte Geräteaktion '{}' von {}", action,
-                    player.getGameProfile().getName());
+                    player.getGameProfile().name());
         }
         sync(player);
     }

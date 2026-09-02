@@ -4,6 +4,7 @@ import com.evarius.rpvca.RpVoiceAddon;
 import com.evarius.rpvca.RpVoiceServices;
 import com.evarius.rpvca.config.RadioConfig;
 import com.evarius.rpvca.config.SpeechConfig;
+import com.evarius.rpvca.permissions.VanillaPermissionLevels;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.ServerCommandSource;
@@ -42,7 +43,7 @@ public final class RpVoiceCommands {
                                                             StringArgumentType.getString(context, "player")))))
                                     .then(literal("clear-all")
                                             .executes(context -> clearAllHistories(context.getSource())))))
-                    .then(literal("reload").requires(source -> source.hasPermissionLevel(2))
+                    .then(literal("reload").requires(source -> VanillaPermissionLevels.has(source, 2))
                             .executes(context -> reload(context.getSource()))));
 
             dispatcher.register(literal("phone")
@@ -79,7 +80,7 @@ public final class RpVoiceCommands {
                     .then(literal("transmit").executes(context -> radioTransmit(context.getSource())))
                     .then(literal("channels").executes(context -> listChannels(context.getSource()))));
 
-            dispatcher.register(literal("celltower").requires(source -> source.hasPermissionLevel(2))
+            dispatcher.register(literal("celltower").requires(source -> VanillaPermissionLevels.has(source, 2))
                     .then(literal("list").executes(context -> listTowers(context.getSource()))));
         });
     }

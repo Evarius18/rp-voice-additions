@@ -73,7 +73,7 @@ public final class TowerRegistry {
     }
 
     private boolean hasCoverage(ServerPlayerEntity player, TowerType type, double range) {
-        String dimension = player.getWorld().getRegistryKey().getValue().toString();
+        String dimension = player.getEntityWorld().getRegistryKey().getValue().toString();
         double maximumSquared = range * range;
         return data.towers.stream().anyMatch(tower -> tower.active && type.id().equals(tower.type)
                 && (!config.requireSameDimension || tower.dimension.equals(dimension))
