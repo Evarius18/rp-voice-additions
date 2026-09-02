@@ -3,6 +3,7 @@ package com.evarius.rpvca.client.gui.component;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.PressableWidget;
+import net.minecraft.client.input.AbstractInput;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
@@ -18,12 +19,12 @@ public final class HandheldButton extends PressableWidget {
     }
 
     @Override
-    public void onPress() {
+    public void onPress(AbstractInput input) {
         action.run();
     }
 
     @Override
-    protected void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+    protected void drawIcon(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         int background = !active ? 0xFF1A252B : isHovered() ? style.hover : style.background;
         int border = isHovered() && active ? style.accent : 0xFF334952;
         context.fill(getX(), getY(), getX() + width, getY() + height, border);

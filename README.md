@@ -7,11 +7,11 @@ Mobilfunknetz, ohne Simple Voice Chat zu verändern.
 
 ## Voraussetzungen
 
-- Minecraft 1.21.8
+- Minecraft 1.21.11
 - Java 21
 - Fabric Loader 0.19.3 oder neuer
 - Fabric API
-- Simple Voice Chat mit API 2.6.20 oder neuer, auf Client und Server
+- Simple Voice Chat 1.21.11-2.6.22 oder neuer, auf Client und Server
 
 ## Funktionen
 
@@ -195,9 +195,9 @@ Das fertige Artefakt liegt anschließend in `build/libs/`.
 
 ### Mastmodelle neu erzeugen
 
-Die gelieferten Blockbench-Mastmodelle verwenden das Minecraft-1.21.11-Format mit
-mehrachsigen Elementrotationen. Die installierten Modelle sind für 1.21.8 konvertierte
-Laufzeit-Assets. Nach Änderungen an den Originalen müssen sie erneut erzeugt werden:
+Die gelieferten Mastmodelle stammen aus dem Minecraft-1.21.11-Format. Der Branch behält
+zunächst die bereits geprüften, abwärtskompatibel konvertierten Laufzeit-Assets bei. Nach
+Änderungen an den Originalen können sie erneut erzeugt werden:
 
 ```text
 python scripts/convert_blockbench_models.py <Originalordner> \
@@ -205,10 +205,9 @@ python scripts/convert_blockbench_models.py <Originalordner> \
   --allow-lossy --report-json build/model-converter/mast-report.json
 ```
 
-`--allow-lossy` ist bewusst explizit: Fünf kleine Elemente des Mobilfunkaufsatzes sind im
-älteren Vanilla-Modellformat nicht exakt darstellbar. Der Konverter berechnet die beste
-Näherung und dokumentiert deren Geometriefehler. Ein Test verhindert, dass versehentlich
-unkonvertierte 1.21.11-Rotationen als 1.21.8-Ressourcen ausgeliefert werden.
+`--allow-lossy` bleibt für Backports bewusst explizit: Fünf kleine Elemente des
+Mobilfunkaufsatzes sind im älteren Vanilla-Modellformat nicht exakt darstellbar. Der
+Konverter berechnet die beste Näherung und dokumentiert deren Geometriefehler.
 
 ## Technische Struktur
 

@@ -14,6 +14,7 @@ import com.evarius.rpvca.phone.history.CallDirection;
 import com.evarius.rpvca.phone.history.CallHistoryEntryView;
 import com.evarius.rpvca.phone.history.CallHistoryStatus;
 import com.evarius.rpvca.permissions.EmergencyResponderResolver;
+import com.evarius.rpvca.permissions.VanillaPermissionLevels;
 import com.evarius.rpvca.state.PlayerProfiles;
 import com.evarius.rpvca.state.TowerRegistry;
 import net.minecraft.server.MinecraftServer;
@@ -71,7 +72,7 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
             return ContactMutationResult.NOT_ALLOWED;
         }
         ContactMutationResult result = profiles.upsertContact(player.getUuid(),
-                player.getGameProfile().getName(), name, number);
+                player.getGameProfile().name(), name, number);
         notice(player.getUuid(), "notice.rp-vca.contact." + result.name().toLowerCase(java.util.Locale.ROOT));
         CommunicationNetworking.sync(player);
         return result;
@@ -125,13 +126,13 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
         if (!sameServer(administrator) || targetPlayerId == null) {
             return HistoryMutationResult.INVALID_REQUEST;
         }
-        if (!administrator.hasPermissionLevel(config.historyAdminPermissionLevel)) {
+        if (!VanillaPermissionLevels.has(administrator, config.historyAdminPermissionLevel)) {
             return HistoryMutationResult.NOT_ALLOWED;
         }
         HistoryMutationResult result = profiles.clearHistory(targetPlayerId);
         if (result.successful()) {
             RpVoiceAddon.LOGGER.info("Administrator {} hat die Anrufhistorie von {} gelöscht",
-                    administrator.getGameProfile().getName(), targetPlayerId);
+                    administrator.getGameProfile().name(), targetPlayerId);
             syncOnline(targetPlayerId);
         }
         return result;
@@ -141,13 +142,13 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
         if (!sameServer(administrator)) {
             return HistoryMutationResult.INVALID_REQUEST;
         }
-        if (!administrator.hasPermissionLevel(config.historyAdminPermissionLevel)) {
+        if (!VanillaPermissionLevels.has(administrator, config.historyAdminPermissionLevel)) {
             return HistoryMutationResult.NOT_ALLOWED;
         }
         HistoryMutationResult result = profiles.clearAllHistories();
         if (result.successful()) {
             RpVoiceAddon.LOGGER.warn("Administrator {} hat ALLE RP-VCA-Anrufhistorien gelöscht",
-                    administrator.getGameProfile().getName());
+                    administrator.getGameProfile().name());
             server.getPlayerManager().getPlayerList().forEach(CommunicationNetworking::sync);
         }
         return result;
@@ -159,7 +160,7 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
                     PhoneNumberAllocationResult.Status.STORAGE_ERROR, "", "");
         }
         PhoneNumberAllocationResult result = profiles.allocateNumber(player.getUuid(),
-                player.getGameProfile().getName());
+                player.getGameProfile().name());
         if (result.successful()) {
             CommunicationNetworking.sync(player);
         }
@@ -654,11 +655,11 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
     }
 
     private PlayerProfiles.Profile profile(ServerPlayerEntity player) {
-        return profiles.getOrCreate(player.getUuid(), player.getGameProfile().getName());
+        return profiles.getOrCreate(player.getUuid(), player.getGameProfile().name());
     }
 
     private boolean sameServer(ServerPlayerEntity player) {
-        return player != null && player.getServer() == server && server.isOnThread();
+        return player != null && player.getEntityWorld().getServer() == server && server.isOnThread();
     }
 
     private void notifyPlayer(UUID playerId, String message) {
@@ -682,7 +683,7 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
 
     private String nameOf(UUID playerId) {
         ServerPlayerEntity player = server.getPlayerManager().getPlayer(playerId);
-        return player == null ? profiles.displayName(playerId) : player.getGameProfile().getName();
+        return player == null ? profiles.displayName(playerId) : player.getGameProfile().name();
     }
 
     private void notice(UUID playerId, String text) {
