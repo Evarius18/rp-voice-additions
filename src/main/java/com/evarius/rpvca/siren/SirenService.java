@@ -7,6 +7,7 @@ import com.evarius.rpvca.api.SirenControllerView;
 import com.evarius.rpvca.config.SirenConfig;
 import com.evarius.rpvca.content.ModContent;
 import com.evarius.rpvca.network.CommunicationNetworking;
+import com.evarius.rpvca.permissions.VanillaPermissionLevels;
 import com.evarius.rpvca.state.JsonStateStore;
 import com.evarius.rpvca.voice.SirenVoiceEngine;
 import net.minecraft.block.Block;
@@ -155,7 +156,7 @@ public final class SirenService implements SirenApi {
         }
         Controller controller = controller(controllerId);
         SirenNode siren = sirenAt(world, pos);
-        ServerWorld playerWorld = (ServerWorld) player.getWorld();
+        ServerWorld playerWorld = player.getEntityWorld();
         if (siren == null && playerWorld.getRegistryKey().equals(world)) {
             Block block = playerWorld.getBlockState(pos).getBlock();
             if (block == ModContent.MAST_SIRENE_ZWEI || block == ModContent.MAST_SIRENE_DREI) {
@@ -542,7 +543,7 @@ public final class SirenService implements SirenApi {
 
     private boolean hasPermission(ServerPlayerEntity player, int operatorLevel, List<String> allowedKeys) {
         if (player == null) return false;
-        if (player.hasPermissionLevel(operatorLevel)) return true;
+        if (VanillaPermissionLevels.has(player, operatorLevel)) return true;
         Set<String> memberships = new LinkedHashSet<>();
         if (player.getScoreboardTeam() != null) {
             memberships.add(player.getScoreboardTeam().getName().trim().toLowerCase(Locale.ROOT));
