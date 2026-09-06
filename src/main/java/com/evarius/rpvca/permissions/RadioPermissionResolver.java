@@ -6,6 +6,7 @@ import com.evarius.rpvca.config.RadioConfig;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -44,14 +45,24 @@ public final class RadioPermissionResolver {
     }
 
     private Set<String> memberships(ServerPlayerEntity player) {
+        LinkedHashSet<String> resolved = new LinkedHashSet<>();
+        if (player.getScoreboardTeam() != null) {
+            resolved.add(player.getScoreboardTeam().getName().trim().toLowerCase(Locale.ROOT));
+        }
         long now = System.currentTimeMillis();
         MembershipCache cached = membershipCache.get(player.getUuid());
         if (cached != null && cached.expiresAt() > now) {
-            return cached.keys();
+            resolved.addAll(cached.keys());
+            return Set.copyOf(resolved);
         }
-        Set<String> keys = compatibility.terraNexusInstitutionKeys(player);
+        Set<String> keys = compatibility.terraNexusInstitutionKeys(player).stream()
+                .filter(java.util.Objects::nonNull)
+                .map(value -> value.trim().toLowerCase(Locale.ROOT))
+                .filter(value -> !value.isBlank())
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
         membershipCache.put(player.getUuid(), new MembershipCache(keys, now + 2_000L));
-        return keys;
+        resolved.addAll(keys);
+        return Set.copyOf(resolved);
     }
 
     private record MembershipCache(Set<String> keys, long expiresAt) {

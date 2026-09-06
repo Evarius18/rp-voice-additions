@@ -65,6 +65,8 @@ public final class ConfigManager {
     }
 
     private void validate() {
+        migrateRadioConfig();
+        migrateCompatibilityConfig();
         if (speech.modes == null || speech.modes.isEmpty()) {
             speech = new SpeechConfig();
         }
@@ -194,7 +196,9 @@ public final class ConfigManager {
                 || entry.getKey().isBlank() || entry.getValue() == null);
         compatibility.institutionRadioChannels.replaceAll((key, channels) ->
                 channels.stream().filter(java.util.Objects::nonNull).map(String::trim)
-                        .filter(value -> value.matches("[a-zA-Z0-9_.-]+")).distinct().toList());
+                        .filter(value -> value.matches("[a-zA-Z0-9_.-]+"))
+                        .filter(value -> channelIds.contains(value.toLowerCase(Locale.ROOT)))
+                        .distinct().toList());
         if (siren.configVersion < 2) {
             // Migrate the original effectively global 512-block default to realistic attenuation.
             if (Math.abs(siren.audibleDistance - 512.0F) < 0.01F) siren.audibleDistance = 192.0F;
@@ -244,6 +248,52 @@ public final class ConfigManager {
         if (siren.scenarios.isEmpty()) {
             siren.scenarios = new SirenConfig().scenarios;
         }
+    }
+
+    private void migrateRadioConfig() {
+        if (radio.configVersion >= 2) return;
+        if (radio.channels == null) {
+            radio.channels = RadioConfig.defaultChannels();
+        } else {
+            Set<String> legacyDefaults = Set.of("1", "police", "fire", "medical");
+            Set<String> currentIds = radio.channels.stream()
+                    .filter(java.util.Objects::nonNull)
+                    .map(channel -> channel.id)
+                    .filter(java.util.Objects::nonNull)
+                    .map(value -> value.toLowerCase(Locale.ROOT))
+                    .collect(java.util.stream.Collectors.toSet());
+            if (currentIds.equals(legacyDefaults)) {
+                radio.channels.clear();
+            }
+            Set<String> retainedIds = radio.channels.stream()
+                    .filter(java.util.Objects::nonNull)
+                    .map(channel -> channel.id)
+                    .filter(java.util.Objects::nonNull)
+                    .map(value -> value.toLowerCase(Locale.ROOT))
+                    .collect(java.util.stream.Collectors.toSet());
+            RadioConfig.defaultChannels().stream()
+                    .filter(channel -> retainedIds.add(channel.id.toLowerCase(Locale.ROOT)))
+                    .forEach(radio.channels::add);
+        }
+        radio.configVersion = 2;
+    }
+
+    private void migrateCompatibilityConfig() {
+        if (compatibility.configVersion >= 2) return;
+        if (compatibility.institutionRadioChannels == null) {
+            compatibility.institutionRadioChannels = new java.util.LinkedHashMap<>();
+        }
+        CompatibilityConfig.defaultInstitutionRadioChannels().forEach((key, defaults) -> {
+            String existingKey = compatibility.institutionRadioChannels.keySet().stream()
+                    .filter(value -> value.equalsIgnoreCase(key)).findFirst().orElse(key);
+            java.util.List<String> merged = new java.util.ArrayList<>(
+                    compatibility.institutionRadioChannels.getOrDefault(existingKey, java.util.List.of()));
+            Set<String> known = merged.stream().map(value -> value.toLowerCase(Locale.ROOT))
+                    .collect(java.util.stream.Collectors.toSet());
+            defaults.stream().filter(value -> known.add(value.toLowerCase(Locale.ROOT))).forEach(merged::add);
+            compatibility.institutionRadioChannels.put(existingKey, merged);
+        });
+        compatibility.configVersion = 2;
     }
 
     private void saveAll() throws IOException {
