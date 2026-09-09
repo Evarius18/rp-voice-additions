@@ -27,7 +27,7 @@ public final class CompatibilityManager {
     }
 
     public Set<String> terraNexusInstitutionKeys(ServerPlayerEntity player) {
-        if (!institutionPermissionsEnabled) {
+        if (!terraNexusAvailable() || !institutionPermissionsEnabled) {
             return Set.of();
         }
         return com.evarius.rpvca.api.RpVcaApi.institutionMembershipKeys(player);

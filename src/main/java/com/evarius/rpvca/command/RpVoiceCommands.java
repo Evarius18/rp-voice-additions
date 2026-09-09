@@ -224,12 +224,14 @@ public final class RpVoiceCommands {
         return 1;
     }
 
-    private static int listChannels(ServerCommandSource source) {
-        String channels = services().configs().radio().channels.stream()
+    private static int listChannels(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        java.util.List<RadioConfig.Channel> available = services().radios()
+                .accessibleChannels(source.getPlayerOrThrow());
+        String channels = available.stream()
                 .map(channel -> channel.id + "=" + channel.displayName)
                 .reduce((first, second) -> first + ", " + second).orElse("keine");
         source.sendFeedback(() -> Text.translatable("command.rp-vca.radio.channels", channels), false);
-        return services().configs().radio().channels.size();
+        return available.size();
     }
 
     private static int listTowers(ServerCommandSource source) {
