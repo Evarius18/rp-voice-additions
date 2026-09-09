@@ -1,15 +1,14 @@
 package com.evarius.rpvca.state;
 
 import com.evarius.rpvca.config.InfrastructureConfig;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.block.Block;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,41 +38,41 @@ public final class TowerRegistry {
         }
     }
 
-    public synchronized void add(RegistryKey<World> world, BlockPos pos) {
+    public synchronized void add(ResourceKey<Level> world, BlockPos pos) {
         add(world, pos, TowerType.CELLULAR);
     }
 
-    public synchronized void add(RegistryKey<World> world, BlockPos pos, TowerType type) {
-        Tower tower = new Tower(world.getValue().toString(), pos.getX(), pos.getY(), pos.getZ(), true, type.id());
+    public synchronized void add(ResourceKey<Level> world, BlockPos pos, TowerType type) {
+        Tower tower = new Tower(world.identifier().toString(), pos.getX(), pos.getY(), pos.getZ(), true, type.id());
         data.towers.removeIf(existing -> existing.sameLocation(tower));
         data.towers.add(tower);
         save();
     }
 
-    public synchronized void remove(RegistryKey<World> world, BlockPos pos) {
-        Tower tower = new Tower(world.getValue().toString(), pos.getX(), pos.getY(), pos.getZ(), true,
+    public synchronized void remove(ResourceKey<Level> world, BlockPos pos) {
+        Tower tower = new Tower(world.identifier().toString(), pos.getX(), pos.getY(), pos.getZ(), true,
                 TowerType.CELLULAR.id());
         if (data.towers.removeIf(existing -> existing.sameLocation(tower))) {
             save();
         }
     }
 
-    public synchronized boolean hasCoverage(ServerPlayerEntity player) {
+    public synchronized boolean hasCoverage(ServerPlayer player) {
         if (!config.enabled) {
             return true;
         }
         return hasCoverage(player, TowerType.CELLULAR, config.towerRange);
     }
 
-    public synchronized boolean hasRadioRelayCoverage(ServerPlayerEntity player) {
+    public synchronized boolean hasRadioRelayCoverage(ServerPlayer player) {
         if (!config.digitalRadioRelaysEnabled) {
             return false;
         }
         return hasCoverage(player, TowerType.DIGITAL_RADIO, config.digitalRadioRelayRange);
     }
 
-    private boolean hasCoverage(ServerPlayerEntity player, TowerType type, double range) {
-        String dimension = player.getEntityWorld().getRegistryKey().getValue().toString();
+    private boolean hasCoverage(ServerPlayer player, TowerType type, double range) {
+        String dimension = player.level().dimension().identifier().toString();
         double maximumSquared = range * range;
         return data.towers.stream().anyMatch(tower -> tower.active && type.id().equals(tower.type)
                 && (!config.requireSameDimension || tower.dimension.equals(dimension))
@@ -95,14 +94,14 @@ public final class TowerRegistry {
             if (dimensionId == null) {
                 return true;
             }
-            net.minecraft.server.world.ServerWorld world = server.getWorld(
-                    RegistryKey.of(RegistryKeys.WORLD, dimensionId));
+            net.minecraft.server.level.ServerLevel world = server.getLevel(
+                    ResourceKey.create(Registries.DIMENSION, dimensionId));
             if (world == null) {
                 return true;
             }
             Block expected = TowerType.DIGITAL_RADIO.id().equals(tower.type)
                     ? digitalRadioBlock : cellularBlock;
-            return !world.getBlockState(new BlockPos(tower.x, tower.y, tower.z)).isOf(expected);
+            return !world.getBlockState(new BlockPos(tower.x, tower.y, tower.z)).is(expected);
         });
         if (changed) {
             save();

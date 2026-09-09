@@ -5,16 +5,15 @@ import com.evarius.rpvca.client.ClientCommunicationState;
 import com.evarius.rpvca.client.gui.component.HandheldButton;
 import com.evarius.rpvca.client.gui.component.HandheldScreen;
 import com.evarius.rpvca.network.CommunicationStatus;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.Text;
-
 import java.time.LocalTime;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.network.chat.Component;
 
 /**
  * TerraNexus-inspired portrait launcher anchored like a phone held in the lower-right hand.
@@ -28,14 +27,14 @@ public final class PhoneScreen extends HandheldScreen {
             DateTimeFormatter.ofPattern("dd.MM. HH:mm").withZone(ZoneId.systemDefault());
 
     private Page page = Page.HOME;
-    private TextFieldWidget dialField;
-    private TextFieldWidget contactNameField;
-    private TextFieldWidget contactNumberField;
+    private EditBox dialField;
+    private EditBox contactNameField;
+    private EditBox contactNumberField;
     private int contentFingerprint;
     private boolean confirmHistoryClear;
 
     public PhoneScreen() {
-        super(Text.translatable("gui.rp-vca.phone.title"));
+        super(Component.translatable("gui.rp-vca.phone.title"));
     }
 
     @Override
@@ -63,13 +62,13 @@ public final class PhoneScreen extends HandheldScreen {
     }
 
     private void rebuild() {
-        clearChildren();
+        clearWidgets();
         dialField = null;
         contactNameField = null;
         contactNumberField = null;
         if (page != Page.HOME) {
             addThemedButton(deviceLeft + 12, deviceTop + deviceHeight - 26, 42, 18,
-                    Text.translatable("gui.rp-vca.phone.back"), HandheldButton.Style.NORMAL,
+                    Component.translatable("gui.rp-vca.phone.back"), HandheldButton.Style.NORMAL,
                     () -> openPage(Page.HOME));
         }
         switch (page) {
@@ -91,17 +90,17 @@ public final class PhoneScreen extends HandheldScreen {
         int rows = ClientCommunicationState.get().phoneApps.isEmpty() ? 2 : 3;
         int tileHeight = Math.clamp((deviceHeight - 112 - (rows - 1) * gap) / rows, 28, 46);
         int y2 = y1 + tileHeight + gap;
-        addThemedButton(x1, y1, tileWidth, tileHeight, Text.translatable("gui.rp-vca.phone.app.phone"),
+        addThemedButton(x1, y1, tileWidth, tileHeight, Component.translatable("gui.rp-vca.phone.app.phone"),
                 HandheldButton.Style.APP, () -> openPage(Page.DIALER));
-        addThemedButton(x2, y1, tileWidth, tileHeight, Text.translatable("gui.rp-vca.phone.app.contacts"),
+        addThemedButton(x2, y1, tileWidth, tileHeight, Component.translatable("gui.rp-vca.phone.app.contacts"),
                 HandheldButton.Style.APP, () -> openPage(Page.CONTACTS));
-        addThemedButton(x1, y2, tileWidth, tileHeight, Text.translatable("gui.rp-vca.phone.app.emergency"),
+        addThemedButton(x1, y2, tileWidth, tileHeight, Component.translatable("gui.rp-vca.phone.app.emergency"),
                 HandheldButton.Style.APP, () -> openPage(Page.EMERGENCY));
-        addThemedButton(x2, y2, tileWidth, tileHeight, Text.translatable("gui.rp-vca.phone.app.history"),
+        addThemedButton(x2, y2, tileWidth, tileHeight, Component.translatable("gui.rp-vca.phone.app.history"),
                 HandheldButton.Style.APP, () -> openPage(Page.HISTORY));
         if (!ClientCommunicationState.get().phoneApps.isEmpty()) {
             addThemedButton(x1, y2 + tileHeight + gap, tileWidth, tileHeight,
-                    Text.translatable("gui.rp-vca.phone.app.terranexus"),
+                    Component.translatable("gui.rp-vca.phone.app.terranexus"),
                     HandheldButton.Style.APP, () -> openPage(Page.APPS));
         }
     }
@@ -110,43 +109,43 @@ public final class PhoneScreen extends HandheldScreen {
         int contentLeft = deviceLeft + 14;
         int contentWidth = deviceWidth - 28;
         int y = deviceTop + 98;
-        dialField = new TextFieldWidget(textRenderer, contentLeft, y, contentWidth, 20,
-                Text.translatable("gui.rp-vca.phone.destination"));
+        dialField = new EditBox(font, contentLeft, y, contentWidth, 20,
+                Component.translatable("gui.rp-vca.phone.destination"));
         dialField.setMaxLength(64);
-        addDrawableChild(dialField);
+        addRenderableWidget(dialField);
         int buttonWidth = (contentWidth - 8) / 2;
         addThemedButton(contentLeft, y + 28, buttonWidth, 22,
-                Text.translatable("gui.rp-vca.phone.call"), HandheldButton.Style.PRIMARY,
-                () -> ClientActions.send("phone_call", dialField.getText().trim()));
+                Component.translatable("gui.rp-vca.phone.call"), HandheldButton.Style.PRIMARY,
+                () -> ClientActions.send("phone_call", dialField.getValue().trim()));
         addThemedButton(contentLeft + buttonWidth + 8, y + 28, buttonWidth, 22,
-                Text.translatable("gui.rp-vca.phone.answer"), HandheldButton.Style.PRIMARY,
+                Component.translatable("gui.rp-vca.phone.answer"), HandheldButton.Style.PRIMARY,
                 () -> ClientActions.send("phone_answer", ClientCommunicationState.get().phoneCallId));
         addThemedButton(contentLeft, y + 58, buttonWidth, 22,
-                Text.translatable("gui.rp-vca.phone.decline"), HandheldButton.Style.DANGER,
+                Component.translatable("gui.rp-vca.phone.decline"), HandheldButton.Style.DANGER,
                 () -> ClientActions.send("phone_decline", ClientCommunicationState.get().phoneCallId));
         addThemedButton(contentLeft + buttonWidth + 8, y + 58, buttonWidth, 22,
-                Text.translatable("gui.rp-vca.phone.hangup"), HandheldButton.Style.DANGER,
+                Component.translatable("gui.rp-vca.phone.hangup"), HandheldButton.Style.DANGER,
                 () -> ClientActions.send("phone_hangup"));
         addThemedButton(contentLeft, y + 88, contentWidth, 22,
-                Text.translatable("gui.rp-vca.phone.speaker"), HandheldButton.Style.NORMAL,
+                Component.translatable("gui.rp-vca.phone.speaker"), HandheldButton.Style.NORMAL,
                 () -> ClientActions.send("phone_speaker"));
     }
 
     private void buildContacts() {
         int contentLeft = deviceLeft + 12;
         int contentWidth = deviceWidth - 24;
-        contactNameField = new TextFieldWidget(textRenderer, contentLeft, deviceTop + 91,
-                contentWidth, 18, Text.translatable("gui.rp-vca.phone.contact.name"));
+        contactNameField = new EditBox(font, contentLeft, deviceTop + 91,
+                contentWidth, 18, Component.translatable("gui.rp-vca.phone.contact.name"));
         contactNameField.setMaxLength(64);
-        addDrawableChild(contactNameField);
-        contactNumberField = new TextFieldWidget(textRenderer, contentLeft, deviceTop + 113,
-                contentWidth, 18, Text.translatable("gui.rp-vca.phone.contact.number"));
+        addRenderableWidget(contactNameField);
+        contactNumberField = new EditBox(font, contentLeft, deviceTop + 113,
+                contentWidth, 18, Component.translatable("gui.rp-vca.phone.contact.number"));
         contactNumberField.setMaxLength(24);
-        addDrawableChild(contactNumberField);
+        addRenderableWidget(contactNumberField);
         addThemedButton(contentLeft, deviceTop + 135, contentWidth, 19,
-                Text.translatable("gui.rp-vca.phone.contact.save"), HandheldButton.Style.PRIMARY,
+                Component.translatable("gui.rp-vca.phone.contact.save"), HandheldButton.Style.PRIMARY,
                 () -> ClientActions.send("contact_upsert",
-                        contactNameField.getText().trim() + "\t" + contactNumberField.getText().trim()));
+                        contactNameField.getValue().trim() + "\t" + contactNumberField.getValue().trim()));
         int y = deviceTop + 159;
         int bottom = deviceTop + deviceHeight - 34;
         for (Map.Entry<String, String> contact : ClientCommunicationState.get().contacts.entrySet()) {
@@ -154,9 +153,9 @@ public final class PhoneScreen extends HandheldScreen {
                 break;
             }
             String label = trim(contact.getKey() + " · " + contact.getValue(), deviceWidth - 62);
-            addThemedButton(deviceLeft + 12, y, deviceWidth - 55, 22, Text.literal(label),
+            addThemedButton(deviceLeft + 12, y, deviceWidth - 55, 22, Component.literal(label),
                     HandheldButton.Style.NORMAL, () -> ClientActions.send("phone_call", contact.getValue()));
-            addThemedButton(deviceLeft + deviceWidth - 38, y, 26, 22, Text.literal("×"),
+            addThemedButton(deviceLeft + deviceWidth - 38, y, 26, 22, Component.literal("×"),
                     HandheldButton.Style.DANGER, () -> ClientActions.send("contact_remove", contact.getKey()));
             y += 27;
         }
@@ -174,20 +173,20 @@ public final class PhoneScreen extends HandheldScreen {
                     ? "←" : "→";
             String display = entry.remoteDisplayName().isBlank()
                     ? entry.remoteNumber() : entry.remoteDisplayName();
-            String result = Text.translatable("gui.rp-vca.phone.history.status."
+            String result = Component.translatable("gui.rp-vca.phone.history.status."
                     + entry.status().name().toLowerCase(java.util.Locale.ROOT)).getString();
             String label = trim(direction + " " + display + " · " + result + " · "
                     + HISTORY_TIME.format(Instant.ofEpochMilli(entry.startedAt())), deviceWidth - 62);
-            addThemedButton(deviceLeft + 12, y, deviceWidth - 55, 22, Text.literal(label),
+            addThemedButton(deviceLeft + 12, y, deviceWidth - 55, 22, Component.literal(label),
                     HandheldButton.Style.NORMAL,
                     () -> ClientActions.send("phone_call", entry.remoteNumber()));
-            addThemedButton(deviceLeft + deviceWidth - 38, y, 26, 22, Text.literal("×"),
+            addThemedButton(deviceLeft + deviceWidth - 38, y, 26, 22, Component.literal("×"),
                     HandheldButton.Style.DANGER,
                     () -> ClientActions.send("history_remove", entry.entryId().toString()));
             y += 27;
         }
         addThemedButton(deviceLeft + 60, deviceTop + deviceHeight - 52, deviceWidth - 72, 19,
-                Text.translatable(confirmHistoryClear
+                Component.translatable(confirmHistoryClear
                         ? "gui.rp-vca.phone.history.confirm_clear"
                         : "gui.rp-vca.phone.history.clear"),
                 HandheldButton.Style.DANGER, () -> {
@@ -209,7 +208,7 @@ public final class PhoneScreen extends HandheldScreen {
                 break;
             }
             addThemedButton(deviceLeft + 12, y, deviceWidth - 24, 24,
-                    Text.literal(number.id() + " · " + number.name()), HandheldButton.Style.DANGER,
+                    Component.literal(number.id() + " · " + number.name()), HandheldButton.Style.DANGER,
                     () -> ClientActions.send("phone_call", number.id()));
             y += 30;
         }
@@ -218,7 +217,7 @@ public final class PhoneScreen extends HandheldScreen {
     private void buildApps() {
         int y = deviceTop + 92;
         for (CommunicationStatus.NamedEntry app : ClientCommunicationState.get().phoneApps) {
-            addThemedButton(deviceLeft + 12, y, deviceWidth - 24, 42, Text.literal(app.name()),
+            addThemedButton(deviceLeft + 12, y, deviceWidth - 24, 42, Component.literal(app.name()),
                     HandheldButton.Style.APP, () -> ClientActions.send("compat_open", app.id()));
             y += 50;
         }
@@ -236,16 +235,16 @@ public final class PhoneScreen extends HandheldScreen {
     }
 
     private String trim(String value, int maxWidth) {
-        return textRenderer.trimToWidth(value, Math.max(20, maxWidth));
+        return font.plainSubstrByWidth(value, Math.max(20, maxWidth));
     }
 
-    private void addThemedButton(int x, int y, int buttonWidth, int buttonHeight, Text label,
+    private void addThemedButton(int x, int y, int buttonWidth, int buttonHeight, Component label,
                                  HandheldButton.Style style, Runnable action) {
-        addDrawableChild(new HandheldButton(x, y, buttonWidth, buttonHeight, label, style, action));
+        addRenderableWidget(new HandheldButton(x, y, buttonWidth, buttonHeight, label, style, action));
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
         renderHandheldFrame(context);
         renderPhoneChrome(context);
         super.render(context, mouseX, mouseY, deltaTicks);
@@ -253,7 +252,7 @@ public final class PhoneScreen extends HandheldScreen {
                 deviceLeft + deviceWidth / 2 + 25, deviceTop + deviceHeight - 6, 0xFF8FA5AB);
     }
 
-    private void renderPhoneChrome(DrawContext context) {
+    private void renderPhoneChrome(GuiGraphics context) {
         CommunicationStatus status = ClientCommunicationState.get();
         int innerLeft = deviceLeft + 7;
         int innerRight = deviceLeft + deviceWidth - 7;
@@ -262,44 +261,44 @@ public final class PhoneScreen extends HandheldScreen {
         context.fill(deviceLeft + deviceWidth / 2 - 18, deviceTop + 4,
                 deviceLeft + deviceWidth / 2 + 18, deviceTop + 6, 0xFF344852);
 
-        context.drawText(textRenderer, LocalTime.now().format(CLOCK), innerLeft + 7,
+        context.drawString(font, LocalTime.now().format(CLOCK), innerLeft + 7,
                 deviceTop + 14, TEXT, false);
         String ecosystem = status.phoneApps.isEmpty() ? "RP" : "TN";
-        context.drawText(textRenderer, ecosystem, innerRight - 34, deviceTop + 14, MUTED, false);
-        context.drawText(textRenderer, status.phoneCoverage ? "▮▮▮" : "×",
+        context.drawString(font, ecosystem, innerRight - 34, deviceTop + 14, MUTED, false);
+        context.drawString(font, status.phoneCoverage ? "▮▮▮" : "×",
                 innerRight - 17, deviceTop + 14, status.phoneCoverage ? ACCENT : 0xFFFF6B73, false);
 
-        context.drawText(textRenderer, title, innerLeft + 9, deviceTop + 38, TEXT, false);
-        context.drawText(textRenderer, pageTitle(), innerLeft + 9, deviceTop + 53, ACCENT, false);
+        context.drawString(font, title, innerLeft + 9, deviceTop + 38, TEXT, false);
+        context.drawString(font, pageTitle(), innerLeft + 9, deviceTop + 53, ACCENT, false);
         context.fill(innerLeft + 8, deviceTop + 69, innerRight - 8, deviceTop + 70, 0xFF31505B);
 
-        String state = Text.translatable("gui.rp-vca.phone.state." + status.phoneState).getString();
+        String state = Component.translatable("gui.rp-vca.phone.state." + status.phoneState).getString();
         String peer = status.phonePeer.isBlank() ? status.phoneNumber : status.phonePeer;
         String statusLine = peer.isBlank() ? state : state + " · " + peer;
-        context.drawText(textRenderer, statusLine, innerLeft + 9, deviceTop + 73,
+        context.drawString(font, statusLine, innerLeft + 9, deviceTop + 73,
                 status.phoneState.equals("incoming") ? 0xFFFFD166 : MUTED, false);
         if (!status.phoneCoverage) {
-            context.drawCenteredTextWithShadow(textRenderer,
-                    Text.translatable("gui.rp-vca.phone.no_network"),
+            context.drawCenteredString(font,
+                    Component.translatable("gui.rp-vca.phone.no_network"),
                     deviceLeft + deviceWidth / 2, deviceTop + deviceHeight - 43, 0xFFFF6B73);
         } else if (!status.phoneNotice.isBlank()) {
-            Text notice = status.phoneNotice.startsWith("notice.rp-vca.")
-                    ? Text.translatable(status.phoneNotice) : Text.literal(status.phoneNotice);
-            context.drawCenteredTextWithShadow(textRenderer, notice,
+            Component notice = status.phoneNotice.startsWith("notice.rp-vca.")
+                    ? Component.translatable(status.phoneNotice) : Component.literal(status.phoneNotice);
+            context.drawCenteredString(font, notice,
                     deviceLeft + deviceWidth / 2, deviceTop + deviceHeight - 43, 0xFFFFD166);
         }
         boolean empty = (page == Page.CONTACTS && status.contacts.isEmpty())
                 || (page == Page.HISTORY && status.callHistory.isEmpty())
                 || (page == Page.APPS && status.phoneApps.isEmpty());
         if (empty) {
-            context.drawCenteredTextWithShadow(textRenderer,
-                    Text.translatable("gui.rp-vca.phone.empty"),
+            context.drawCenteredString(font,
+                    Component.translatable("gui.rp-vca.phone.empty"),
                     deviceLeft + deviceWidth / 2, deviceTop + 112, MUTED);
         }
     }
 
-    private Text pageTitle() {
-        return Text.translatable(switch (page) {
+    private Component pageTitle() {
+        return Component.translatable(switch (page) {
             case HOME -> "gui.rp-vca.phone.page.home";
             case DIALER -> "gui.rp-vca.phone.page.dialer";
             case CONTACTS -> "gui.rp-vca.phone.page.contacts";

@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Public, implementation-independent entry point for optional integrations.
@@ -61,7 +61,7 @@ public final class RpVcaApi {
     }
 
     public static java.util.Optional<DeviceCapabilities> deviceCapabilities(
-            net.minecraft.item.ItemStack stack) {
+            net.minecraft.world.item.ItemStack stack) {
         if (stack == null || stack.isEmpty()) return java.util.Optional.empty();
         for (Map.Entry<String, DeviceCapabilityProvider> entry : DEVICE_PROVIDERS.entrySet()) {
             try {
@@ -90,7 +90,7 @@ public final class RpVcaApi {
         return Map.copyOf(PHONE_APPLICATIONS);
     }
 
-    public static Set<String> institutionMembershipKeys(ServerPlayerEntity player) {
+    public static Set<String> institutionMembershipKeys(ServerPlayer player) {
         java.util.LinkedHashSet<String> result = new java.util.LinkedHashSet<>();
         INSTITUTION_PROVIDERS.forEach((id, provider) -> {
             try {

@@ -1,30 +1,30 @@
 package com.evarius.rpvca.client.gui.component;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.widget.PressableWidget;
-import net.minecraft.client.input.AbstractInput;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractButton;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.InputWithModifiers;
+import net.minecraft.network.chat.Component;
 
 /** Small themed button shared by the phone and radio without coupling their screen logic. */
-public final class HandheldButton extends PressableWidget {
+public final class HandheldButton extends AbstractButton {
     private final Runnable action;
     private final Style style;
 
-    public HandheldButton(int x, int y, int width, int height, Text message, Style style, Runnable action) {
+    public HandheldButton(int x, int y, int width, int height, Component message, Style style, Runnable action) {
         super(x, y, width, height, message);
         this.style = style;
         this.action = action;
     }
 
     @Override
-    public void onPress(AbstractInput input) {
+    public void onPress(InputWithModifiers input) {
         action.run();
     }
 
     @Override
-    protected void drawIcon(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+    protected void renderContents(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
         int background = !active ? 0xFF1A252B : isHovered() ? style.hover : style.background;
         int border = isHovered() && active ? style.accent : 0xFF334952;
         context.fill(getX(), getY(), getX() + width, getY() + height, border);
@@ -33,14 +33,14 @@ public final class HandheldButton extends PressableWidget {
             context.fill(getX() + 1, getY() + 1, getX() + 4, getY() + height - 1, style.accent);
         }
         int color = active ? 0xFFE8F7FA : 0xFF71838A;
-        context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, getMessage(),
+        context.drawCenteredString(Minecraft.getInstance().font, getMessage(),
                 getX() + width / 2,
                 getY() + (height - 8) / 2, color);
     }
 
     @Override
-    protected void appendClickableNarrations(NarrationMessageBuilder builder) {
-        appendDefaultNarrations(builder);
+    protected void updateWidgetNarration(NarrationElementOutput builder) {
+        defaultButtonNarrationText(builder);
     }
 
     public enum Style {

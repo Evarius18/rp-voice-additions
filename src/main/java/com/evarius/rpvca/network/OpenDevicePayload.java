@@ -1,18 +1,18 @@
 package com.evarius.rpvca.network;
 
 import com.evarius.rpvca.RpVoiceAddon;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-public record OpenDevicePayload(String device) implements CustomPayload {
-    public static final Id<OpenDevicePayload> ID = new Id<>(RpVoiceAddon.id("open_device"));
-    public static final PacketCodec<RegistryByteBuf, OpenDevicePayload> CODEC = PacketCodec.tuple(
-            PacketCodecs.string(16), OpenDevicePayload::device, OpenDevicePayload::new);
+public record OpenDevicePayload(String device) implements CustomPacketPayload {
+    public static final Type<OpenDevicePayload> ID = new Type<>(RpVoiceAddon.id("open_device"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, OpenDevicePayload> CODEC = StreamCodec.composite(
+            ByteBufCodecs.stringUtf8(16), OpenDevicePayload::device, OpenDevicePayload::new);
 
     @Override
-    public Id<? extends CustomPayload> getId() {
+    public Type<? extends CustomPacketPayload> type() {
         return ID;
     }
 }

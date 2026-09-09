@@ -3,27 +3,27 @@ package com.evarius.rpvca.content;
 import com.evarius.rpvca.RpVoiceAddon;
 import com.evarius.rpvca.state.TowerRegistry;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
-import net.minecraft.block.AbstractBlock;
-import net.minecraft.block.Block;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.block.piston.PistonBehavior;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.PushReaction;
 
 public final class ModContent {
     public static final Item MOBILE_PHONE = registerItem("mobile_phone",
-            key -> new MobilePhoneItem(new Item.Settings().registryKey(key).maxCount(1)));
+            key -> new MobilePhoneItem(new Item.Properties().setId(key).stacksTo(1)));
     public static final Item RADIO = registerItem("radio",
-            key -> new RadioItem(new Item.Settings().registryKey(key).maxCount(1)));
+            key -> new RadioItem(new Item.Properties().setId(key).stacksTo(1)));
     public static final Item SIREN_PROGRAMMER = registerItem("siren_programmer",
-            key -> new Item(new Item.Settings().registryKey(key).maxCount(1)));
+            key -> new Item(new Item.Properties().setId(key).stacksTo(1)));
     public static final Block MAST_BASIS = registerBlock("mast_basis",
             key -> new Block(mastSettings(key)));
     public static final Block MAST = registerBlock("mast",
@@ -37,26 +37,26 @@ public final class ModContent {
     public static final Block MAST_DIGITALFUNK = registerBlock("mast_digitalfunk",
             key -> new FunctionalMastBlock(mastSettings(key), TowerRegistry.TowerType.DIGITAL_RADIO));
     public static final Block SIREN_CONTROLLER = registerBlock("siren_controller",
-            key -> new SirenControllerBlock(AbstractBlock.Settings.create()
-                    .registryKey(key)
+            key -> new SirenControllerBlock(BlockBehaviour.Properties.of()
+                    .setId(key)
                     .strength(2.5F)
-                    .sounds(BlockSoundGroup.WOOD)));
-    public static final ItemGroup COMMUNICATION_GROUP = Registry.register(Registries.ITEM_GROUP,
+                    .sound(SoundType.WOOD)));
+    public static final CreativeModeTab COMMUNICATION_GROUP = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB,
             RpVoiceAddon.id("communication"),
             FabricItemGroup.builder()
                     .icon(() -> new ItemStack(MOBILE_PHONE))
-                    .displayName(net.minecraft.text.Text.translatable("itemgroup.rp-vca.communication"))
-                    .entries((context, entries) -> {
-                        entries.add(MOBILE_PHONE);
-                        entries.add(RADIO);
-                        entries.add(SIREN_PROGRAMMER);
-                        entries.add(MAST_BASIS);
-                        entries.add(MAST);
-                        entries.add(MAST_SIRENE_ZWEI);
-                        entries.add(MAST_SIRENE_DREI);
-                        entries.add(MAST_MOBILFUNK);
-                        entries.add(MAST_DIGITALFUNK);
-                        entries.add(SIREN_CONTROLLER);
+                    .title(net.minecraft.network.chat.Component.translatable("itemgroup.rp-vca.communication"))
+                    .displayItems((context, entries) -> {
+                        entries.accept(MOBILE_PHONE);
+                        entries.accept(RADIO);
+                        entries.accept(SIREN_PROGRAMMER);
+                        entries.accept(MAST_BASIS);
+                        entries.accept(MAST);
+                        entries.accept(MAST_SIRENE_ZWEI);
+                        entries.accept(MAST_SIRENE_DREI);
+                        entries.accept(MAST_MOBILFUNK);
+                        entries.accept(MAST_DIGITALFUNK);
+                        entries.accept(SIREN_CONTROLLER);
                     }).build());
 
     private ModContent() {
@@ -66,28 +66,28 @@ public final class ModContent {
         // Triggers static registration. Entries are declared exactly once in the dedicated group.
     }
 
-    private static Item registerItem(String path, java.util.function.Function<RegistryKey<Item>, Item> factory) {
+    private static Item registerItem(String path, java.util.function.Function<ResourceKey<Item>, Item> factory) {
         Identifier id = RpVoiceAddon.id(path);
-        RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, id);
-        return Registry.register(Registries.ITEM, key, factory.apply(key));
+        ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, id);
+        return Registry.register(BuiltInRegistries.ITEM, key, factory.apply(key));
     }
 
-    private static Block registerBlock(String path, java.util.function.Function<RegistryKey<Block>, Block> factory) {
+    private static Block registerBlock(String path, java.util.function.Function<ResourceKey<Block>, Block> factory) {
         Identifier id = RpVoiceAddon.id(path);
-        RegistryKey<Block> blockKey = RegistryKey.of(RegistryKeys.BLOCK, id);
-        Block block = Registry.register(Registries.BLOCK, blockKey, factory.apply(blockKey));
-        RegistryKey<Item> itemKey = RegistryKey.of(RegistryKeys.ITEM, id);
-        Registry.register(Registries.ITEM, itemKey, new BlockItem(block, new Item.Settings().registryKey(itemKey)));
+        ResourceKey<Block> blockKey = ResourceKey.create(Registries.BLOCK, id);
+        Block block = Registry.register(BuiltInRegistries.BLOCK, blockKey, factory.apply(blockKey));
+        ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, id);
+        Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, new Item.Properties().setId(itemKey)));
         return block;
     }
 
-    private static AbstractBlock.Settings mastSettings(RegistryKey<Block> key) {
-        return AbstractBlock.Settings.create()
-                .registryKey(key)
+    private static BlockBehaviour.Properties mastSettings(ResourceKey<Block> key) {
+        return BlockBehaviour.Properties.of()
+                .setId(key)
                 .strength(4.0F, 8.0F)
-                .sounds(BlockSoundGroup.METAL)
-                .pistonBehavior(PistonBehavior.BLOCK)
-                .requiresTool()
-                .nonOpaque();
+                .sound(SoundType.METAL)
+                .pushReaction(PushReaction.BLOCK)
+                .requiresCorrectToolForDrops()
+                .noOcclusion();
     }
 }

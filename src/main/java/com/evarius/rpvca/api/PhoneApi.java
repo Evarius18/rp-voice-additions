@@ -1,54 +1,53 @@
 package com.evarius.rpvca.api;
 
 import com.evarius.rpvca.phone.history.CallHistoryEntryView;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import net.minecraft.server.level.ServerPlayer;
 
 /** Stable public phone contract for optional integrations such as TerraNexus. */
 public interface PhoneApi {
-    ContactMutationResult upsertContact(ServerPlayerEntity player, String name, String number);
+    ContactMutationResult upsertContact(ServerPlayer player, String name, String number);
 
-    ContactMutationResult removeContact(ServerPlayerEntity player, String name);
+    ContactMutationResult removeContact(ServerPlayer player, String name);
 
-    Map<String, String> getContacts(ServerPlayerEntity player);
+    Map<String, String> getContacts(ServerPlayer player);
 
-    List<CallHistoryEntryView> getCallHistory(ServerPlayerEntity player);
+    List<CallHistoryEntryView> getCallHistory(ServerPlayer player);
 
-    HistoryMutationResult removeHistoryEntry(ServerPlayerEntity player, UUID entryId);
+    HistoryMutationResult removeHistoryEntry(ServerPlayer player, UUID entryId);
 
-    HistoryMutationResult clearOwnCallHistory(ServerPlayerEntity player);
+    HistoryMutationResult clearOwnCallHistory(ServerPlayer player);
 
-    HistoryMutationResult clearCallHistory(ServerPlayerEntity administrator, UUID targetPlayerId);
+    HistoryMutationResult clearCallHistory(ServerPlayer administrator, UUID targetPlayerId);
 
-    HistoryMutationResult clearAllCallHistories(ServerPlayerEntity administrator);
+    HistoryMutationResult clearAllCallHistories(ServerPlayer administrator);
 
-    PhoneNumberAllocationResult allocateNumber(ServerPlayerEntity player);
+    PhoneNumberAllocationResult allocateNumber(ServerPlayer player);
 
     Optional<String> getAssignedNumber(UUID playerId);
 
-    PhoneStatusView getStatus(ServerPlayerEntity player);
+    PhoneStatusView getStatus(ServerPlayer player);
 
     List<EmergencyNumberView> getEmergencyNumbers();
 
-    boolean call(ServerPlayerEntity caller, String destination);
+    boolean call(ServerPlayer caller, String destination);
 
-    CallMutationResult startCall(ServerPlayerEntity caller, String destination);
+    CallMutationResult startCall(ServerPlayer caller, String destination);
 
-    CallMutationResult acceptCall(ServerPlayerEntity callee, UUID callId);
+    CallMutationResult acceptCall(ServerPlayer callee, UUID callId);
 
-    CallMutationResult declineCall(ServerPlayerEntity callee, UUID callId);
+    CallMutationResult declineCall(ServerPlayer callee, UUID callId);
 
-    CallerDisplay resolveCallerDisplay(ServerPlayerEntity viewer, String callerNumber);
+    CallerDisplay resolveCallerDisplay(ServerPlayer viewer, String callerNumber);
 
-    boolean answer(ServerPlayerEntity callee);
+    boolean answer(ServerPlayer callee);
 
-    boolean decline(ServerPlayerEntity callee);
+    boolean decline(ServerPlayer callee);
 
-    boolean hangup(ServerPlayerEntity player);
+    boolean hangup(ServerPlayer player);
 
-    boolean toggleSpeaker(ServerPlayerEntity player);
+    boolean toggleSpeaker(ServerPlayer player);
 }

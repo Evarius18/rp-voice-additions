@@ -1,10 +1,9 @@
 package com.evarius.rpvca.siren;
 
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 
 /** Runtime-only resolved siren position; never persisted or exposed through the API. */
-public record SirenEmitter(UUID sirenId, ServerWorld world, BlockPos pos) {
+public record SirenEmitter(UUID sirenId, ServerLevel world, BlockPos pos) {
 }

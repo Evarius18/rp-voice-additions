@@ -10,7 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 public final class CommunicationNetworking {
     private static final Gson GSON = new GsonBuilder().create();
@@ -30,12 +30,12 @@ public final class CommunicationNetworking {
                 context.server().execute(() -> handle(context.player(), payload)));
     }
 
-    public static void openDevice(ServerPlayerEntity player, String device) {
+    public static void openDevice(ServerPlayer player, String device) {
         sync(player);
         ServerPlayNetworking.send(player, new OpenDevicePayload(device));
     }
 
-    public static void sync(ServerPlayerEntity player) {
+    public static void sync(ServerPlayer player) {
         RpVoiceServices services = RpVoiceServices.get();
         if (services == null || !ServerPlayNetworking.canSend(player, StatusPayload.ID)) {
             return;
@@ -44,14 +44,14 @@ public final class CommunicationNetworking {
         ServerPlayNetworking.send(player, new StatusPayload(GSON.toJson(status)));
     }
 
-    public static void openSirenController(ServerPlayerEntity player,
+    public static void openSirenController(ServerPlayer player,
                                            com.evarius.rpvca.siren.SirenControllerSnapshot snapshot) {
         if (ServerPlayNetworking.canSend(player, SirenControllerPayload.ID)) {
             ServerPlayNetworking.send(player, new SirenControllerPayload(GSON.toJson(snapshot)));
         }
     }
 
-    private static void handle(ServerPlayerEntity player, DeviceActionPayload payload) {
+    private static void handle(ServerPlayer player, DeviceActionPayload payload) {
         RpVoiceServices services = RpVoiceServices.get();
         if (services == null) {
             return;
@@ -62,8 +62,8 @@ public final class CommunicationNetworking {
             case "status_request" -> {
             }
             case "open_phone_request" -> openHeldPhone(services, player);
-            case "speech_cycle" -> services.speech().cycle(player.getUuid());
-            case "speech_set" -> services.speech().setMode(player.getUuid(), value);
+            case "speech_cycle" -> services.speech().cycle(player.getUUID());
+            case "speech_set" -> services.speech().setMode(player.getUUID(), value);
             case "phone_call" -> services.phones().call(player, value);
             case "phone_answer" -> parseUuid(value).ifPresent(id -> services.phones().acceptCall(player, id));
             case "phone_decline" -> parseUuid(value).ifPresent(id -> services.phones().declineCall(player, id));
@@ -104,11 +104,11 @@ public final class CommunicationNetworking {
                     .map(id -> services.sirens().cancelFromOpenSession(player, id))
                     .orElse(com.evarius.rpvca.api.SirenActionResult.INVALID_REQUEST));
             case "siren_live" -> sendSirenResult(services, player,
-                    com.evarius.rpvca.voice.SirenVoiceEngine.isLive(player.getUuid())
+                    com.evarius.rpvca.voice.SirenVoiceEngine.isLive(player.getUUID())
                             ? services.sirens().stopLiveAnnouncement(player)
                             : services.sirens().startLiveFromOpenSession(player));
             case "siren_record" -> sendSirenResult(services, player,
-                    com.evarius.rpvca.voice.SirenVoiceEngine.isRecording(player.getUuid())
+                    com.evarius.rpvca.voice.SirenVoiceEngine.isRecording(player.getUUID())
                             ? services.sirens().stopAndSaveRecording(player, value)
                             : services.sirens().startRecording(player));
             case "siren_announcement" -> sendSirenResult(services, player, parseUuid(value)
@@ -128,15 +128,15 @@ public final class CommunicationNetworking {
         sync(player);
     }
 
-    private static void sendSirenResult(RpVoiceServices services, ServerPlayerEntity player,
+    private static void sendSirenResult(RpVoiceServices services, ServerPlayer player,
                                         com.evarius.rpvca.api.SirenActionResult result) {
         String notice = "notice.rp-vca.siren." + result.name().toLowerCase(java.util.Locale.ROOT);
         services.sirens().sendSnapshot(player, notice);
     }
 
-    private static CommunicationStatus createStatus(RpVoiceServices services, ServerPlayerEntity player) {
+    private static CommunicationStatus createStatus(RpVoiceServices services, ServerPlayer player) {
         CommunicationStatus status = new CommunicationStatus();
-        SpeechConfig.Mode speech = services.speech().mode(player.getUuid());
+        SpeechConfig.Mode speech = services.speech().mode(player.getUUID());
         status.speechMode = speech.id;
         status.speechTranslationKey = com.evarius.rpvca.speech.SpeechMode.translationKey(speech.id);
         status.speechDistance = speech.distance;
@@ -158,11 +158,11 @@ public final class CommunicationNetworking {
             status.emergencyNumbers.add(new CommunicationStatus.NamedEntry(number.number, number.displayName));
         }
 
-        String channelId = services.radios().tunedChannel(player.getUuid());
+        String channelId = services.radios().tunedChannel(player.getUUID());
         RadioConfig.Channel tuned = channelId == null ? null : services.radios().channel(channelId);
         status.radioChannel = tuned == null ? "" : tuned.id;
         status.radioDisplayName = tuned == null ? "" : tuned.displayName;
-        status.radioTransmitting = services.radios().isTransmitting(player.getUuid());
+        status.radioTransmitting = services.radios().isTransmitting(player.getUUID());
         status.radioAvailable = services.radios().hasRadioDevice(player);
         status.radioEnabled = services.configs().radio().enabled;
         status.radioPoweredOn = tuned != null;
@@ -187,7 +187,7 @@ public final class CommunicationNetworking {
         }
     }
 
-    private static void openHeldPhone(RpVoiceServices services, ServerPlayerEntity player) {
+    private static void openHeldPhone(RpVoiceServices services, ServerPlayer player) {
         java.util.Optional<com.evarius.rpvca.item.ResolvedPhoneDevice> held =
                 services.deviceItems().resolveHeldPhone(player, services.configs().phone());
         if (held.isEmpty()) {

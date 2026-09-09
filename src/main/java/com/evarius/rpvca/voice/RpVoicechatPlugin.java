@@ -14,8 +14,7 @@ import de.maxhenkel.voicechat.api.events.VoicechatServerStartedEvent;
 import de.maxhenkel.voicechat.api.events.VoicechatServerStoppedEvent;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.server.network.ServerPlayerEntity;
-
+import net.minecraft.server.level.ServerPlayer;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -85,7 +84,7 @@ public final class RpVoicechatPlugin implements VoicechatPlugin {
             return;
         }
         UUID senderId = event.getSenderConnection().getPlayer().getUuid();
-        ServerPlayerEntity sender = services.server().getPlayerManager().getPlayer(senderId);
+        ServerPlayer sender = services.server().getPlayerList().getPlayer(senderId);
         if (sender == null) {
             return;
         }
@@ -95,13 +94,13 @@ public final class RpVoicechatPlugin implements VoicechatPlugin {
     }
 
     private void routePhone(MicrophonePacketEvent event, RpVoiceServices services,
-                            VoicechatServerApi voiceApi, ServerPlayerEntity sender) {
-        PhoneService.CallSession call = services.phones().activeCall(sender.getUuid());
+                            VoicechatServerApi voiceApi, ServerPlayer sender) {
+        PhoneService.CallSession call = services.phones().activeCall(sender.getUUID());
         if (call == null || !services.phones().canRouteAudio(sender)) {
             return;
         }
-        UUID receiverId = call.other(sender.getUuid());
-        ServerPlayerEntity receiver = services.server().getPlayerManager().getPlayer(receiverId);
+        UUID receiverId = call.other(sender.getUUID());
+        ServerPlayer receiver = services.server().getPlayerList().getPlayer(receiverId);
         if (receiver == null || !services.phones().canRouteAudio(receiver)) {
             return;
         }
@@ -125,7 +124,7 @@ public final class RpVoicechatPlugin implements VoicechatPlugin {
                 channel.send(event.getPacket());
             }
         } else {
-            StaticAudioChannel channel = phoneChannels.computeIfAbsent(sender.getUuid(), id -> {
+            StaticAudioChannel channel = phoneChannels.computeIfAbsent(sender.getUUID(), id -> {
                 StaticAudioChannel created = voiceApi.createStaticAudioChannel(
                         VoiceChannelIds.forPlayer("phone-private", id));
                 if (created != null) {
@@ -146,11 +145,11 @@ public final class RpVoicechatPlugin implements VoicechatPlugin {
     }
 
     private void routeRadio(MicrophonePacketEvent event, RpVoiceServices services,
-                            VoicechatServerApi voiceApi, ServerPlayerEntity sender) {
+                            VoicechatServerApi voiceApi, ServerPlayer sender) {
         if (!services.radios().canTransmit(sender)) {
             return;
         }
-        StaticAudioChannel channel = radioChannels.computeIfAbsent(sender.getUuid(), id -> {
+        StaticAudioChannel channel = radioChannels.computeIfAbsent(sender.getUUID(), id -> {
             StaticAudioChannel created = voiceApi.createStaticAudioChannel(VoiceChannelIds.forPlayer("radio", id));
             if (created != null) {
                 created.setCategory(RADIO_CATEGORY);
@@ -162,11 +161,11 @@ public final class RpVoicechatPlugin implements VoicechatPlugin {
             return;
         }
         channel.clearTargets();
-        for (ServerPlayerEntity receiver : services.server().getPlayerManager().getPlayerList()) {
+        for (ServerPlayer receiver : services.server().getPlayerList().getPlayers()) {
             if (!services.radios().canReceive(sender, receiver)) {
                 continue;
             }
-            de.maxhenkel.voicechat.api.VoicechatConnection connection = voiceApi.getConnectionOf(receiver.getUuid());
+            de.maxhenkel.voicechat.api.VoicechatConnection connection = voiceApi.getConnectionOf(receiver.getUUID());
             if (connection != null) {
                 channel.addTarget(connection);
             }

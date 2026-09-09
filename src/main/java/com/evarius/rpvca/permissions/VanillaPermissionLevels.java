@@ -1,25 +1,25 @@
 package com.evarius.rpvca.permissions;
 
-import net.minecraft.command.permission.Permission;
-import net.minecraft.command.permission.PermissionLevel;
-import net.minecraft.command.permission.PermissionPredicate;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
+import net.minecraft.server.permissions.PermissionSet;
 
 /** Central adapter for Minecraft 1.21.11's level-based permission API. */
 public final class VanillaPermissionLevels {
     private VanillaPermissionLevels() {
     }
 
-    public static boolean has(ServerCommandSource source, int level) {
-        return has(source.getPermissions(), level);
+    public static boolean has(CommandSourceStack source, int level) {
+        return has(source.permissions(), level);
     }
 
-    public static boolean has(ServerPlayerEntity player, int level) {
-        return has(player.getPermissions(), level);
+    public static boolean has(ServerPlayer player, int level) {
+        return has(player.permissions(), level);
     }
 
-    private static boolean has(PermissionPredicate permissions, int level) {
-        return permissions.hasPermission(new Permission.Level(PermissionLevel.fromLevel(level)));
+    private static boolean has(PermissionSet permissions, int level) {
+        return permissions.hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(level)));
     }
 }

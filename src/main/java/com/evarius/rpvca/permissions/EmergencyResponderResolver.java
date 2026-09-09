@@ -2,15 +2,14 @@ package com.evarius.rpvca.permissions;
 
 import com.evarius.rpvca.api.RpVcaApi;
 import com.evarius.rpvca.config.EmergencyConfig;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
+import net.minecraft.server.level.ServerPlayer;
 
 /** Combines vanilla teams and optional institution providers without knowing their mods. */
 public final class EmergencyResponderResolver {
-    public boolean isEligible(ServerPlayerEntity player, EmergencyConfig.Number definition) {
+    public boolean isEligible(ServerPlayer player, EmergencyConfig.Number definition) {
         Set<String> required = new LinkedHashSet<>();
         if (definition.responderTeam != null && !definition.responderTeam.isBlank()) {
             required.add(normalize(definition.responderTeam));
@@ -25,10 +24,10 @@ public final class EmergencyResponderResolver {
         return required.stream().anyMatch(memberships::contains);
     }
 
-    public Set<String> resolveMembershipKeys(ServerPlayerEntity player) {
+    public Set<String> resolveMembershipKeys(ServerPlayer player) {
         Set<String> result = new LinkedHashSet<>();
-        if (player.getScoreboardTeam() != null) {
-            result.add(normalize(player.getScoreboardTeam().getName()));
+        if (player.getTeam() != null) {
+            result.add(normalize(player.getTeam().getName()));
         }
         RpVcaApi.institutionMembershipKeys(player).stream()
                 .map(EmergencyResponderResolver::normalize).filter(value -> !value.isBlank())

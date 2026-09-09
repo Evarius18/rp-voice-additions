@@ -39,7 +39,7 @@ public final class RpVoiceAddonClient implements ClientModInitializer {
                 context.client().execute(() -> {
                     SirenControllerSnapshot snapshot = GSON.fromJson(payload.json(), SirenControllerSnapshot.class);
                     if (snapshot == null) return;
-                    if (context.client().currentScreen instanceof com.evarius.rpvca.client.gui.SirenControllerScreen screen) {
+                    if (context.client().screen instanceof com.evarius.rpvca.client.gui.SirenControllerScreen screen) {
                         screen.updateSnapshot(snapshot);
                     } else {
                         context.client().setScreen(new com.evarius.rpvca.client.gui.SirenControllerScreen(snapshot));

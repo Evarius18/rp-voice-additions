@@ -1,8 +1,7 @@
 package com.evarius.rpvca.api;
 
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.Set;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Optional server-side SPI for institution mods.
@@ -12,5 +11,5 @@ import java.util.Set;
  */
 @FunctionalInterface
 public interface InstitutionMembershipProvider {
-    Set<String> membershipKeys(ServerPlayerEntity player);
+    Set<String> membershipKeys(ServerPlayer player);
 }

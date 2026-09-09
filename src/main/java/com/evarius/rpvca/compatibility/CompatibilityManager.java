@@ -2,9 +2,8 @@ package com.evarius.rpvca.compatibility;
 
 import com.evarius.rpvca.config.CompatibilityConfig;
 import com.evarius.rpvca.api.PhoneApplicationProvider;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.Set;
+import net.minecraft.server.level.ServerPlayer;
 
 public final class CompatibilityManager {
     private final boolean terraNexusEnabled;
@@ -26,7 +25,7 @@ public final class CompatibilityManager {
                 ? com.evarius.rpvca.api.RpVcaApi.phoneApplications() : java.util.Map.of();
     }
 
-    public Set<String> terraNexusInstitutionKeys(ServerPlayerEntity player) {
+    public Set<String> terraNexusInstitutionKeys(ServerPlayer player) {
         if (!terraNexusAvailable() || !institutionPermissionsEnabled) {
             return Set.of();
         }

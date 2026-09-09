@@ -17,10 +17,9 @@ import com.evarius.rpvca.permissions.EmergencyResponderResolver;
 import com.evarius.rpvca.permissions.VanillaPermissionLevels;
 import com.evarius.rpvca.state.PlayerProfiles;
 import com.evarius.rpvca.state.TowerRegistry;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-
+import net.minecraft.server.level.ServerPlayer;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -67,62 +66,62 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
         noticeDurationMillis = Math.max(1, noticeDurationSeconds) * 1_000L;
     }
 
-    public ContactMutationResult upsertContact(ServerPlayerEntity player, String name, String number) {
+    public ContactMutationResult upsertContact(ServerPlayer player, String name, String number) {
         if (!sameServer(player)) {
             return ContactMutationResult.NOT_ALLOWED;
         }
-        ContactMutationResult result = profiles.upsertContact(player.getUuid(),
+        ContactMutationResult result = profiles.upsertContact(player.getUUID(),
                 player.getGameProfile().name(), name, number);
-        notice(player.getUuid(), "notice.rp-vca.contact." + result.name().toLowerCase(java.util.Locale.ROOT));
+        notice(player.getUUID(), "notice.rp-vca.contact." + result.name().toLowerCase(java.util.Locale.ROOT));
         CommunicationNetworking.sync(player);
         return result;
     }
 
-    public ContactMutationResult removeContact(ServerPlayerEntity player, String name) {
+    public ContactMutationResult removeContact(ServerPlayer player, String name) {
         if (!sameServer(player)) {
             return ContactMutationResult.NOT_ALLOWED;
         }
-        ContactMutationResult result = profiles.removeContact(player.getUuid(), name);
-        notice(player.getUuid(), "notice.rp-vca.contact." + result.name().toLowerCase(java.util.Locale.ROOT));
+        ContactMutationResult result = profiles.removeContact(player.getUUID(), name);
+        notice(player.getUUID(), "notice.rp-vca.contact." + result.name().toLowerCase(java.util.Locale.ROOT));
         CommunicationNetworking.sync(player);
         return result;
     }
 
-    public Map<String, String> getContacts(ServerPlayerEntity player) {
+    public Map<String, String> getContacts(ServerPlayer player) {
         if (!sameServer(player)) {
             return Map.of();
         }
-        return profiles.contacts(player.getUuid());
+        return profiles.contacts(player.getUUID());
     }
 
-    public List<CallHistoryEntryView> getCallHistory(ServerPlayerEntity player) {
+    public List<CallHistoryEntryView> getCallHistory(ServerPlayer player) {
         if (!sameServer(player)) {
             return List.of();
         }
         return historyFor(player);
     }
 
-    public HistoryMutationResult removeHistoryEntry(ServerPlayerEntity player, UUID entryId) {
+    public HistoryMutationResult removeHistoryEntry(ServerPlayer player, UUID entryId) {
         if (!sameServer(player)) {
             return HistoryMutationResult.NOT_ALLOWED;
         }
-        HistoryMutationResult result = profiles.removeHistoryEntry(player.getUuid(), entryId);
-        notice(player.getUuid(), "notice.rp-vca.history." + result.name().toLowerCase(java.util.Locale.ROOT));
+        HistoryMutationResult result = profiles.removeHistoryEntry(player.getUUID(), entryId);
+        notice(player.getUUID(), "notice.rp-vca.history." + result.name().toLowerCase(java.util.Locale.ROOT));
         CommunicationNetworking.sync(player);
         return result;
     }
 
-    public HistoryMutationResult clearOwnCallHistory(ServerPlayerEntity player) {
+    public HistoryMutationResult clearOwnCallHistory(ServerPlayer player) {
         if (!sameServer(player)) {
             return HistoryMutationResult.NOT_ALLOWED;
         }
-        HistoryMutationResult result = profiles.clearHistory(player.getUuid());
-        notice(player.getUuid(), "notice.rp-vca.history." + result.name().toLowerCase(java.util.Locale.ROOT));
+        HistoryMutationResult result = profiles.clearHistory(player.getUUID());
+        notice(player.getUUID(), "notice.rp-vca.history." + result.name().toLowerCase(java.util.Locale.ROOT));
         CommunicationNetworking.sync(player);
         return result;
     }
 
-    public HistoryMutationResult clearCallHistory(ServerPlayerEntity administrator, UUID targetPlayerId) {
+    public HistoryMutationResult clearCallHistory(ServerPlayer administrator, UUID targetPlayerId) {
         if (!sameServer(administrator) || targetPlayerId == null) {
             return HistoryMutationResult.INVALID_REQUEST;
         }
@@ -138,7 +137,7 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
         return result;
     }
 
-    public HistoryMutationResult clearAllCallHistories(ServerPlayerEntity administrator) {
+    public HistoryMutationResult clearAllCallHistories(ServerPlayer administrator) {
         if (!sameServer(administrator)) {
             return HistoryMutationResult.INVALID_REQUEST;
         }
@@ -149,17 +148,17 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
         if (result.successful()) {
             RpVoiceAddon.LOGGER.warn("Administrator {} hat ALLE RP-VCA-Anrufhistorien gelöscht",
                     administrator.getGameProfile().name());
-            server.getPlayerManager().getPlayerList().forEach(CommunicationNetworking::sync);
+            server.getPlayerList().getPlayers().forEach(CommunicationNetworking::sync);
         }
         return result;
     }
 
-    public PhoneNumberAllocationResult allocateNumber(ServerPlayerEntity player) {
+    public PhoneNumberAllocationResult allocateNumber(ServerPlayer player) {
         if (!sameServer(player)) {
             return new PhoneNumberAllocationResult(
                     PhoneNumberAllocationResult.Status.STORAGE_ERROR, "", "");
         }
-        PhoneNumberAllocationResult result = profiles.allocateNumber(player.getUuid(),
+        PhoneNumberAllocationResult result = profiles.allocateNumber(player.getUUID(),
                 player.getGameProfile().name());
         if (result.successful()) {
             CommunicationNetworking.sync(player);
@@ -172,7 +171,7 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
     }
 
     @Override
-    public com.evarius.rpvca.api.PhoneStatusView getStatus(ServerPlayerEntity player) {
+    public com.evarius.rpvca.api.PhoneStatusView getStatus(ServerPlayer player) {
         if (!sameServer(player)) {
             return new com.evarius.rpvca.api.PhoneStatusView(
                     "unavailable", null, "", "", false, "", false, false, false, "");
@@ -198,21 +197,21 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
         return profiles.findPlayerIdByName(playerName);
     }
 
-    public void initializeProfile(ServerPlayerEntity player) {
+    public void initializeProfile(ServerPlayer player) {
         if (sameServer(player)) {
             profile(player);
         }
     }
 
-    public boolean call(ServerPlayerEntity caller, String destination) {
+    public boolean call(ServerPlayer caller, String destination) {
         return startCall(caller, destination).successful();
     }
 
     @Override
-    public CallMutationResult startCall(ServerPlayerEntity caller, String destination) {
-        if (!sameServer(caller) || !canUse(caller, true) || isBusy(caller.getUuid())) {
-            if (sameServer(caller) && isBusy(caller.getUuid())) {
-                caller.sendMessage(Text.translatable("message.rp-vca.phone.busy_self"));
+    public CallMutationResult startCall(ServerPlayer caller, String destination) {
+        if (!sameServer(caller) || !canUse(caller, true) || isBusy(caller.getUUID())) {
+            if (sameServer(caller) && isBusy(caller.getUUID())) {
+                caller.sendSystemMessage(Component.translatable("message.rp-vca.phone.busy_self"));
             }
             return CallMutationResult.of(CallMutationResult.Status.NOT_ALLOWED, null);
         }
@@ -220,28 +219,28 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
         long startedAt = System.currentTimeMillis();
         Target target = resolveTarget(caller, destination);
         if (target == null) {
-            caller.sendMessage(Text.translatable("message.rp-vca.phone.unreachable"));
+            caller.sendSystemMessage(Component.translatable("message.rp-vca.phone.unreachable"));
             recordSingle(callerProfile, CallDirection.OUTGOING, CallHistoryStatus.UNREACHABLE,
                     destination, destination, startedAt, 0L, startedAt);
             CommunicationNetworking.sync(caller);
             return CallMutationResult.of(CallMutationResult.Status.INVALID_NUMBER, null);
         }
-        ServerPlayerEntity callee = target.player();
+        ServerPlayer callee = target.player();
         if (callee == null || !canReceive(callee)) {
-            caller.sendMessage(Text.translatable("message.rp-vca.phone.unreachable"));
+            caller.sendSystemMessage(Component.translatable("message.rp-vca.phone.unreachable"));
             recordSingle(callerProfile, CallDirection.OUTGOING, CallHistoryStatus.UNREACHABLE,
                     target.destinationNumber(), target.destinationNumber(), startedAt, 0L, startedAt);
             CommunicationNetworking.sync(caller);
             return CallMutationResult.of(CallMutationResult.Status.UNREACHABLE, null);
         }
-        if (callee.getUuid().equals(caller.getUuid())) {
-            caller.sendMessage(Text.translatable("message.rp-vca.phone.self_call"));
+        if (callee.getUUID().equals(caller.getUUID())) {
+            caller.sendSystemMessage(Component.translatable("message.rp-vca.phone.self_call"));
             recordSingle(callerProfile, CallDirection.OUTGOING, CallHistoryStatus.FAILED,
                     target.destinationNumber(), target.destinationNumber(), startedAt, 0L, startedAt);
             return CallMutationResult.of(CallMutationResult.Status.NOT_ALLOWED, null);
         }
-        if (isBusy(callee.getUuid())) {
-            caller.sendMessage(Text.translatable("message.rp-vca.phone.busy"));
+        if (isBusy(callee.getUUID())) {
+            caller.sendSystemMessage(Component.translatable("message.rp-vca.phone.busy"));
             recordSingle(callerProfile, CallDirection.OUTGOING, CallHistoryStatus.BUSY,
                     target.destinationNumber(), target.destinationNumber(), startedAt, 0L, startedAt);
             CommunicationNetworking.sync(caller);
@@ -249,46 +248,46 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
         }
         PlayerProfiles.Profile calleeProfile = profile(callee);
         UUID callId = UUID.randomUUID();
-        PendingCall pending = new PendingCall(callId, caller.getUuid(), callee.getUuid(), startedAt,
+        PendingCall pending = new PendingCall(callId, caller.getUUID(), callee.getUUID(), startedAt,
                 callerProfile.phoneNumber, calleeProfile.phoneNumber, target.destinationNumber());
-        pendingByCaller.put(caller.getUuid(), pending);
-        pendingByCallee.put(callee.getUuid(), pending);
-        notices.remove(caller.getUuid());
-        notices.remove(callee.getUuid());
+        pendingByCaller.put(caller.getUUID(), pending);
+        pendingByCallee.put(callee.getUUID(), pending);
+        notices.remove(caller.getUUID());
+        notices.remove(callee.getUUID());
         CallerDisplay outgoingDisplay = resolveCallerDisplay(caller, target.destinationNumber());
         CallerDisplay incomingDisplay = resolveCallerDisplay(callee, callerProfile.phoneNumber);
-        caller.sendMessage(Text.translatable("message.rp-vca.phone.calling", outgoingDisplay.primaryText()));
-        callee.sendMessage(Text.translatable("message.rp-vca.phone.incoming", incomingDisplay.primaryText()));
+        caller.sendSystemMessage(Component.translatable("message.rp-vca.phone.calling", outgoingDisplay.primaryText()));
+        callee.sendSystemMessage(Component.translatable("message.rp-vca.phone.incoming", incomingDisplay.primaryText()));
         syncParticipants(pending);
         return CallMutationResult.of(CallMutationResult.Status.RINGING, callId);
     }
 
-    public boolean answer(ServerPlayerEntity callee) {
-        PendingCall pending = callee == null ? null : pendingByCallee.get(callee.getUuid());
+    public boolean answer(ServerPlayer callee) {
+        PendingCall pending = callee == null ? null : pendingByCallee.get(callee.getUUID());
         return acceptCall(callee, pending == null ? null : pending.callId()).successful();
     }
 
     @Override
-    public CallMutationResult acceptCall(ServerPlayerEntity callee, UUID callId) {
+    public CallMutationResult acceptCall(ServerPlayer callee, UUID callId) {
         if (!sameServer(callee)) {
             return CallMutationResult.of(CallMutationResult.Status.NOT_ALLOWED, callId);
         }
-        PendingCall pending = pendingByCallee.get(callee.getUuid());
+        PendingCall pending = pendingByCallee.get(callee.getUUID());
         if (pending == null) {
             return CallMutationResult.of(CallMutationResult.Status.NOT_FOUND, callId);
         }
         if (callId == null || !pending.callId().equals(callId)) {
             return CallMutationResult.of(CallMutationResult.Status.STALE_CALL, callId);
         }
-        pendingByCallee.remove(callee.getUuid(), pending);
+        pendingByCallee.remove(callee.getUUID(), pending);
         pendingByCaller.remove(pending.callerId());
-        ServerPlayerEntity caller = server.getPlayerManager().getPlayer(pending.callerId());
+        ServerPlayer caller = server.getPlayerList().getPlayer(pending.callerId());
         if (caller == null || !canUse(caller, false) || !canReceive(callee)) {
             long endedAt = System.currentTimeMillis();
             recordPending(pending, CallHistoryStatus.UNREACHABLE, CallHistoryStatus.FAILED, 0L, endedAt);
-            callee.sendMessage(Text.translatable("message.rp-vca.phone.no_longer_available"));
+            callee.sendSystemMessage(Component.translatable("message.rp-vca.phone.no_longer_available"));
             if (caller != null) {
-                caller.sendMessage(Text.translatable("message.rp-vca.phone.connection_failed"));
+                caller.sendSystemMessage(Component.translatable("message.rp-vca.phone.connection_failed"));
             }
             syncParticipants(pending);
             return CallMutationResult.of(CallMutationResult.Status.UNREACHABLE, callId);
@@ -297,112 +296,112 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
         CallSession session = new CallSession(pending.callId(), pending.callerId(), pending.calleeId(),
                 pending.createdAt(), answeredAt, pending.callerNumber(), pending.calleeNumber(),
                 pending.destinationNumber());
-        activeCalls.put(caller.getUuid(), session);
-        activeCalls.put(callee.getUuid(), session);
-        notices.remove(caller.getUuid());
-        notices.remove(callee.getUuid());
-        caller.sendMessage(Text.translatable("message.rp-vca.phone.connected",
+        activeCalls.put(caller.getUUID(), session);
+        activeCalls.put(callee.getUUID(), session);
+        notices.remove(caller.getUUID());
+        notices.remove(callee.getUUID());
+        caller.sendSystemMessage(Component.translatable("message.rp-vca.phone.connected",
                 resolveCallerDisplay(caller, pending.destinationNumber()).primaryText()));
-        callee.sendMessage(Text.translatable("message.rp-vca.phone.connected",
+        callee.sendSystemMessage(Component.translatable("message.rp-vca.phone.connected",
                 resolveCallerDisplay(callee, pending.callerNumber()).primaryText()));
         syncParticipants(pending);
         return CallMutationResult.of(CallMutationResult.Status.CONNECTED, callId);
     }
 
-    public boolean decline(ServerPlayerEntity callee) {
-        PendingCall pending = callee == null ? null : pendingByCallee.get(callee.getUuid());
+    public boolean decline(ServerPlayer callee) {
+        PendingCall pending = callee == null ? null : pendingByCallee.get(callee.getUUID());
         return declineCall(callee, pending == null ? null : pending.callId()).successful();
     }
 
     @Override
-    public CallMutationResult declineCall(ServerPlayerEntity callee, UUID callId) {
+    public CallMutationResult declineCall(ServerPlayer callee, UUID callId) {
         if (!sameServer(callee)) {
             return CallMutationResult.of(CallMutationResult.Status.NOT_ALLOWED, callId);
         }
-        PendingCall pending = pendingByCallee.get(callee.getUuid());
+        PendingCall pending = pendingByCallee.get(callee.getUUID());
         if (pending == null) {
             return CallMutationResult.of(CallMutationResult.Status.NOT_FOUND, callId);
         }
         if (callId == null || !pending.callId().equals(callId)) {
             return CallMutationResult.of(CallMutationResult.Status.STALE_CALL, callId);
         }
-        pendingByCallee.remove(callee.getUuid(), pending);
+        pendingByCallee.remove(callee.getUUID(), pending);
         pendingByCaller.remove(pending.callerId());
         recordPending(pending, CallHistoryStatus.DECLINED, CallHistoryStatus.DECLINED,
                 0L, System.currentTimeMillis());
-        ServerPlayerEntity caller = server.getPlayerManager().getPlayer(pending.callerId());
+        ServerPlayer caller = server.getPlayerList().getPlayer(pending.callerId());
         if (caller != null) {
-            caller.sendMessage(Text.translatable("message.rp-vca.phone.declined"));
-            notice(caller.getUuid(), "notice.rp-vca.phone.declined");
+            caller.sendSystemMessage(Component.translatable("message.rp-vca.phone.declined"));
+            notice(caller.getUUID(), "notice.rp-vca.phone.declined");
         }
-        notice(callee.getUuid(), "notice.rp-vca.phone.declined");
-        callee.sendMessage(Text.translatable("message.rp-vca.phone.declined"));
+        notice(callee.getUUID(), "notice.rp-vca.phone.declined");
+        callee.sendSystemMessage(Component.translatable("message.rp-vca.phone.declined"));
         syncParticipants(pending);
         return CallMutationResult.of(CallMutationResult.Status.DECLINED, callId);
     }
 
-    public boolean hangup(ServerPlayerEntity player) {
+    public boolean hangup(ServerPlayer player) {
         if (!sameServer(player)) {
             return false;
         }
-        PendingCall outgoing = pendingByCaller.remove(player.getUuid());
+        PendingCall outgoing = pendingByCaller.remove(player.getUUID());
         if (outgoing != null) {
             pendingByCallee.remove(outgoing.calleeId());
             recordPending(outgoing, CallHistoryStatus.CANCELLED, CallHistoryStatus.CANCELLED,
                     0L, System.currentTimeMillis());
             notifyPlayer(outgoing.calleeId(), "message.rp-vca.phone.call_ended");
             notice(outgoing.calleeId(), "notice.rp-vca.phone.ended");
-            notice(player.getUuid(), "notice.rp-vca.phone.ended");
-            player.sendMessage(Text.translatable("message.rp-vca.phone.call_ended"));
+            notice(player.getUUID(), "notice.rp-vca.phone.ended");
+            player.sendSystemMessage(Component.translatable("message.rp-vca.phone.call_ended"));
             syncParticipants(outgoing);
             return true;
         }
-        PendingCall incoming = pendingByCallee.remove(player.getUuid());
+        PendingCall incoming = pendingByCallee.remove(player.getUUID());
         if (incoming != null) {
             pendingByCaller.remove(incoming.callerId());
             recordPending(incoming, CallHistoryStatus.DECLINED, CallHistoryStatus.DECLINED,
                     0L, System.currentTimeMillis());
             notifyPlayer(incoming.callerId(), "message.rp-vca.phone.call_ended");
             notice(incoming.callerId(), "notice.rp-vca.phone.ended");
-            notice(player.getUuid(), "notice.rp-vca.phone.ended");
-            player.sendMessage(Text.translatable("message.rp-vca.phone.call_ended"));
+            notice(player.getUUID(), "notice.rp-vca.phone.ended");
+            player.sendSystemMessage(Component.translatable("message.rp-vca.phone.call_ended"));
             syncParticipants(incoming);
             return true;
         }
-        CallSession session = activeCalls.remove(player.getUuid());
+        CallSession session = activeCalls.remove(player.getUUID());
         if (session == null) {
-            player.sendMessage(Text.translatable("message.rp-vca.phone.no_active_call"));
+            player.sendSystemMessage(Component.translatable("message.rp-vca.phone.no_active_call"));
             return false;
         }
-        UUID other = session.other(player.getUuid());
+        UUID other = session.other(player.getUUID());
         activeCalls.remove(other);
-        speakerEnabled.remove(player.getUuid());
+        speakerEnabled.remove(player.getUUID());
         speakerEnabled.remove(other);
         recordSession(session, CallHistoryStatus.COMPLETED, System.currentTimeMillis());
         notifyPlayer(other, "message.rp-vca.phone.remote_hangup");
         notice(other, "notice.rp-vca.phone.ended");
-        notice(player.getUuid(), "notice.rp-vca.phone.ended");
-        player.sendMessage(Text.translatable("message.rp-vca.phone.call_ended"));
+        notice(player.getUUID(), "notice.rp-vca.phone.ended");
+        player.sendSystemMessage(Component.translatable("message.rp-vca.phone.call_ended"));
         syncOnline(other);
         CommunicationNetworking.sync(player);
         return true;
     }
 
-    public boolean toggleSpeaker(ServerPlayerEntity player) {
-        if (!sameServer(player) || !activeCalls.containsKey(player.getUuid())) {
+    public boolean toggleSpeaker(ServerPlayer player) {
+        if (!sameServer(player) || !activeCalls.containsKey(player.getUUID())) {
             if (sameServer(player)) {
-                player.sendMessage(Text.translatable("message.rp-vca.phone.speaker_unavailable"));
+                player.sendSystemMessage(Component.translatable("message.rp-vca.phone.speaker_unavailable"));
             }
             return false;
         }
         boolean enabled;
-        if (speakerEnabled.remove(player.getUuid())) {
+        if (speakerEnabled.remove(player.getUUID())) {
             enabled = false;
         } else {
-            speakerEnabled.add(player.getUuid());
+            speakerEnabled.add(player.getUUID());
             enabled = true;
         }
-        player.sendMessage(Text.translatable(enabled
+        player.sendSystemMessage(Component.translatable(enabled
                 ? "message.rp-vca.phone.speaker_on" : "message.rp-vca.phone.speaker_off"));
         CommunicationNetworking.sync(player);
         return enabled;
@@ -416,22 +415,22 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
         return speakerEnabled.contains(playerId);
     }
 
-    public boolean hasCoverage(ServerPlayerEntity player) {
+    public boolean hasCoverage(ServerPlayer player) {
         return !config.requireCoverage || towers.hasCoverage(player);
     }
 
-    public boolean isHoldingUsablePhone(ServerPlayerEntity player) {
+    public boolean isHoldingUsablePhone(ServerPlayer player) {
         return deviceItems.isHoldingUsablePhone(player, config);
     }
 
-    public boolean canRouteAudio(ServerPlayerEntity player) {
+    public boolean canRouteAudio(ServerPlayer player) {
         return hasCoverage(player) && (!config.mustBeHeldForAudio || isHoldingUsablePhone(player));
     }
 
-    public void showNotice(ServerPlayerEntity player, String translationKey) {
+    public void showNotice(ServerPlayer player, String translationKey) {
         if (!sameServer(player) || translationKey == null
                 || !translationKey.matches("[a-z0-9_.-]{1,128}")) return;
-        notice(player.getUuid(), translationKey);
+        notice(player.getUUID(), translationKey);
         CommunicationNetworking.sync(player);
     }
 
@@ -453,8 +452,8 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
                     }
                 });
         activeCalls.values().stream().distinct().toList().forEach(call -> {
-            ServerPlayerEntity first = server.getPlayerManager().getPlayer(call.first());
-            ServerPlayerEntity second = server.getPlayerManager().getPlayer(call.second());
+            ServerPlayer first = server.getPlayerList().getPlayer(call.first());
+            ServerPlayer second = server.getPlayerList().getPlayer(call.second());
             if (first == null || second == null || !hasCoverage(first) || !hasCoverage(second)) {
                 endSession(call, "message.rp-vca.phone.network_lost");
             }
@@ -489,16 +488,16 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
         }
     }
 
-    public String status(ServerPlayerEntity player) {
+    public String status(ServerPlayer player) {
         PlayerProfiles.Profile profile = profile(player);
-        CallSession call = activeCalls.get(player.getUuid());
-        String connection = call == null ? "kein Gespräch" : "verbunden mit " + nameOf(call.other(player.getUuid()));
+        CallSession call = activeCalls.get(player.getUUID());
+        String connection = call == null ? "kein Gespräch" : "verbunden mit " + nameOf(call.other(player.getUUID()));
         return "§6Telefon §7| Nummer: §f" + profiles.formatNumber(profile.phoneNumber) + " §7| " + connection
                 + " §7| Netz: " + (hasCoverage(player) ? "§aJa" : "§cNein");
     }
 
-    public ClientView clientView(ServerPlayerEntity player) {
-        UUID playerId = player.getUuid();
+    public ClientView clientView(ServerPlayer player) {
+        UUID playerId = player.getUUID();
         PendingCall incoming = pendingByCallee.get(playerId);
         PendingCall outgoing = pendingByCaller.get(playerId);
         CallSession active = activeCalls.get(playerId);
@@ -527,14 +526,14 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
     }
 
     @Override
-    public CallerDisplay resolveCallerDisplay(ServerPlayerEntity viewer, String callerNumber) {
+    public CallerDisplay resolveCallerDisplay(ServerPlayer viewer, String callerNumber) {
         if (!sameServer(viewer)) return new CallerDisplay("", "", false, true);
         String normalized = profiles.normalizeNumber(callerNumber).orElse("");
         if (normalized.isBlank()) {
             return new CallerDisplay("", "", false, true);
         }
         String formatted = profiles.formatNumber(normalized);
-        String contactName = profiles.contacts(viewer.getUuid()).entrySet().stream()
+        String contactName = profiles.contacts(viewer.getUUID()).entrySet().stream()
                 .filter(entry -> entry.getValue().equals(normalized))
                 .map(Map.Entry::getKey).findFirst().orElse("");
         return contactName.isBlank()
@@ -542,8 +541,8 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
                 : new CallerDisplay(contactName, formatted, true, false);
     }
 
-    private List<CallHistoryEntryView> historyFor(ServerPlayerEntity viewer) {
-        return profiles.history(viewer.getUuid()).stream().map(entry -> {
+    private List<CallHistoryEntryView> historyFor(ServerPlayer viewer) {
+        return profiles.history(viewer.getUUID()).stream().map(entry -> {
             CallerDisplay display = resolveCallerDisplay(viewer, entry.remoteNumber());
             return new CallHistoryEntryView(entry.entryId(), entry.direction(), entry.status(),
                     entry.localNumber(), entry.remoteNumber(),
@@ -552,25 +551,25 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
         }).toList();
     }
 
-    private Target resolveTarget(ServerPlayerEntity caller, String rawDestination) {
-        String destination = profiles.resolveContact(caller.getUuid(), rawDestination).orElse(rawDestination);
+    private Target resolveTarget(ServerPlayer caller, String rawDestination) {
+        String destination = profiles.resolveContact(caller.getUUID(), rawDestination).orElse(rawDestination);
         String normalized = profiles.normalizeNumber(destination).orElse("");
         EmergencyConfig.Number emergency = emergencyConfig.enabled ? emergencyConfig.numbers.stream()
                 .filter(number -> number.number.equals(normalized)).findFirst().orElse(null) : null;
         if (emergency != null) {
-            ServerPlayerEntity responder = server.getPlayerManager().getPlayerList().stream()
-                    .filter(player -> !player.getUuid().equals(caller.getUuid()))
+            ServerPlayer responder = server.getPlayerList().getPlayers().stream()
+                    .filter(player -> !player.getUUID().equals(caller.getUUID()))
                     .filter(player -> emergencyResponders.isEligible(player, emergency))
-                    .filter(player -> !isBusy(player.getUuid()) && canReceive(player))
-                    .min(Comparator.comparingDouble(player -> player.squaredDistanceTo(caller)))
+                    .filter(player -> !isBusy(player.getUUID()) && canReceive(player))
+                    .min(Comparator.comparingDouble(player -> player.distanceToSqr(caller)))
                     .orElse(null);
             return new Target(responder, emergency.number);
         }
         PlayerProfiles.Profile byNumber = profiles.findByNumber(destination);
         if (byNumber != null) {
-            return new Target(server.getPlayerManager().getPlayer(byNumber.playerId), byNumber.phoneNumber);
+            return new Target(server.getPlayerList().getPlayer(byNumber.playerId), byNumber.phoneNumber);
         }
-        ServerPlayerEntity online = server.getPlayerManager().getPlayer(destination);
+        ServerPlayer online = server.getPlayerList().getPlayerByName(destination);
         if (online != null) {
             PlayerProfiles.Profile profile = profile(online);
             return new Target(online, profile.phoneNumber);
@@ -583,23 +582,23 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
         return null;
     }
 
-    private boolean canUse(ServerPlayerEntity player, boolean report) {
+    private boolean canUse(ServerPlayer player, boolean report) {
         if (!config.enabled) {
-            if (report) player.sendMessage(Text.translatable("message.rp-vca.phone.disabled"));
+            if (report) player.sendSystemMessage(Component.translatable("message.rp-vca.phone.disabled"));
             return false;
         }
         if (config.requirePhoneItem && !deviceItems.hasPhone(player)) {
-            if (report) player.sendMessage(Text.translatable("message.rp-vca.phone.device_required"));
+            if (report) player.sendSystemMessage(Component.translatable("message.rp-vca.phone.device_required"));
             return false;
         }
         if (!hasCoverage(player)) {
-            if (report) player.sendMessage(Text.translatable("message.rp-vca.phone.no_network"));
+            if (report) player.sendSystemMessage(Component.translatable("message.rp-vca.phone.no_network"));
             return false;
         }
         return true;
     }
 
-    private boolean canReceive(ServerPlayerEntity player) {
+    private boolean canReceive(ServerPlayer player) {
         return canUse(player, false);
     }
 
@@ -654,23 +653,23 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
         ));
     }
 
-    private PlayerProfiles.Profile profile(ServerPlayerEntity player) {
-        return profiles.getOrCreate(player.getUuid(), player.getGameProfile().name());
+    private PlayerProfiles.Profile profile(ServerPlayer player) {
+        return profiles.getOrCreate(player.getUUID(), player.getGameProfile().name());
     }
 
-    private boolean sameServer(ServerPlayerEntity player) {
-        return player != null && player.getEntityWorld().getServer() == server && server.isOnThread();
+    private boolean sameServer(ServerPlayer player) {
+        return player != null && player.level().getServer() == server && server.isSameThread();
     }
 
     private void notifyPlayer(UUID playerId, String message) {
-        ServerPlayerEntity player = server.getPlayerManager().getPlayer(playerId);
+        ServerPlayer player = server.getPlayerList().getPlayer(playerId);
         if (player != null) {
-            player.sendMessage(Text.translatable(message));
+            player.sendSystemMessage(Component.translatable(message));
         }
     }
 
     private void syncOnline(UUID playerId) {
-        ServerPlayerEntity player = server.getPlayerManager().getPlayer(playerId);
+        ServerPlayer player = server.getPlayerList().getPlayer(playerId);
         if (player != null) {
             CommunicationNetworking.sync(player);
         }
@@ -682,7 +681,7 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
     }
 
     private String nameOf(UUID playerId) {
-        ServerPlayerEntity player = server.getPlayerManager().getPlayer(playerId);
+        ServerPlayer player = server.getPlayerList().getPlayer(playerId);
         return player == null ? profiles.displayName(playerId) : player.getGameProfile().name();
     }
 
@@ -694,7 +693,7 @@ public final class PhoneService implements com.evarius.rpvca.api.PhoneApi {
                                String callerNumber, String calleeNumber, String destinationNumber) {
     }
 
-    private record Target(ServerPlayerEntity player, String destinationNumber) {
+    private record Target(ServerPlayer player, String destinationNumber) {
     }
 
     public record CallSession(UUID callId, UUID first, UUID second, long startedAt, long answeredAt,

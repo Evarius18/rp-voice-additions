@@ -9,9 +9,9 @@ import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.ActionResult;
+import net.minecraft.world.InteractionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,20 +30,20 @@ public class RpVoiceAddon implements ModInitializer {
 		RpVoiceCommands.register();
 		UseItemCallback.EVENT.register((player, world, hand) -> {
 			RpVoiceServices services = RpVoiceServices.get();
-			if (world.isClient() || services == null || !CONFIGS.devices().openGuiOnItemUse
-					|| !(player instanceof net.minecraft.server.network.ServerPlayerEntity serverPlayer)) {
-				return ActionResult.PASS;
+			if (world.isClientSide() || services == null || !CONFIGS.devices().openGuiOnItemUse
+					|| !(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) {
+				return InteractionResult.PASS;
 			}
-			net.minecraft.item.ItemStack stack = player.getStackInHand(hand);
+			net.minecraft.world.item.ItemStack stack = player.getItemInHand(hand);
 			if (services.deviceItems().shouldOpenRpVcaScreen(stack)) {
 				CommunicationNetworking.openDevice(serverPlayer, "phone");
-				return ActionResult.SUCCESS;
+				return InteractionResult.SUCCESS;
 			}
 			if (services.deviceItems().isRadio(stack)) {
 				CommunicationNetworking.openDevice(serverPlayer, "radio");
-				return ActionResult.SUCCESS;
+				return InteractionResult.SUCCESS;
 			}
-			return ActionResult.PASS;
+			return InteractionResult.PASS;
 		});
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 			RpVoiceServices.start(server, CONFIGS);
@@ -55,9 +55,9 @@ public class RpVoiceAddon implements ModInitializer {
 			if (services != null) {
 				services.sirens().tick();
 			}
-			if (services != null && server.getTicks() % 20 == 0) {
+			if (services != null && server.getTickCount() % 20 == 0) {
 				services.phones().tick();
-				server.getPlayerManager().getPlayerList().forEach(CommunicationNetworking::sync);
+				server.getPlayerList().getPlayers().forEach(CommunicationNetworking::sync);
 			}
 		});
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
@@ -70,9 +70,9 @@ public class RpVoiceAddon implements ModInitializer {
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
 			RpVoiceServices services = RpVoiceServices.get();
 			if (services != null) {
-				services.phones().onDisconnect(handler.player.getUuid());
-				services.radios().onDisconnect(handler.player.getUuid());
-				services.sirens().onDisconnect(handler.player.getUuid());
+				services.phones().onDisconnect(handler.player.getUUID());
+				services.radios().onDisconnect(handler.player.getUUID());
+				services.sirens().onDisconnect(handler.player.getUUID());
 			}
 		});
 	}
@@ -87,6 +87,6 @@ public class RpVoiceAddon implements ModInitializer {
 	}
 
 	public static Identifier id(String path) {
-		return Identifier.of(MOD_ID, path);
+		return Identifier.fromNamespaceAndPath(MOD_ID, path);
 	}
 }

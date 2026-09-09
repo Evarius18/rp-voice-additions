@@ -4,7 +4,7 @@ import com.evarius.rpvca.client.ClientConfigStore;
 import com.evarius.rpvca.voice.VoiceChannelIds;
 import de.maxhenkel.voicechat.api.events.ClientReceiveSoundEvent;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 /**
  * Applies the radio GUI's client-local gain only to RP-VCA radio channels.
@@ -19,9 +19,9 @@ public final class ClientRadioAudio {
     }
 
     private static void onStaticSound(ClientReceiveSoundEvent.StaticSound event) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.world == null || client.world.getPlayers().stream()
-                .noneMatch(player -> VoiceChannelIds.forPlayer("radio", player.getUuid()).equals(event.getId()))) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.level == null || client.level.players().stream()
+                .noneMatch(player -> VoiceChannelIds.forPlayer("radio", player.getUUID()).equals(event.getId()))) {
             return;
         }
         double gain = ClientConfigStore.get().radioVolume;

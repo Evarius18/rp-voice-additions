@@ -7,15 +7,14 @@ import com.evarius.rpvca.config.DeviceConfig;
 import com.evarius.rpvca.config.PhoneConfig;
 import com.evarius.rpvca.config.RadioConfig;
 import com.evarius.rpvca.content.ModContent;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
-
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 /** Cached registry-level device resolution plus optional public provider capabilities. */
 public final class DeviceItemResolver {
@@ -61,25 +60,25 @@ public final class DeviceItemResolver {
         return capabilities != null && capabilities.radioEnabled();
     }
 
-    public boolean hasPhone(ServerPlayerEntity player) {
-        for (int slot = 0; slot < player.getInventory().size(); slot++) {
-            if (isPhone(player.getInventory().getStack(slot))) return true;
+    public boolean hasPhone(ServerPlayer player) {
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            if (isPhone(player.getInventory().getItem(slot))) return true;
         }
         return false;
     }
 
-    public boolean isHoldingUsablePhone(ServerPlayerEntity player, PhoneConfig config) {
+    public boolean isHoldingUsablePhone(ServerPlayer player, PhoneConfig config) {
         return resolveHeldPhone(player, config).isPresent();
     }
 
     public java.util.Optional<ResolvedPhoneDevice> resolveHeldPhone(
-            ServerPlayerEntity player, PhoneConfig config) {
+            ServerPlayer player, PhoneConfig config) {
         if (config.allowMainHand) {
-            ResolvedPhoneDevice resolved = resolvePhone(player.getMainHandStack());
+            ResolvedPhoneDevice resolved = resolvePhone(player.getMainHandItem());
             if (resolved != null) return java.util.Optional.of(resolved);
         }
         if (config.allowOffHand) {
-            ResolvedPhoneDevice resolved = resolvePhone(player.getOffHandStack());
+            ResolvedPhoneDevice resolved = resolvePhone(player.getOffhandItem());
             if (resolved != null) return java.util.Optional.of(resolved);
         }
         return java.util.Optional.empty();
@@ -88,23 +87,23 @@ public final class DeviceItemResolver {
     private ResolvedPhoneDevice resolvePhone(ItemStack stack) {
         DeviceCapabilities capabilities = capabilities(stack);
         if (capabilities == null || !capabilities.phoneEnabled()) return null;
-        Identifier itemId = Registries.ITEM.getId(stack.getItem());
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         return new ResolvedPhoneDevice(stack.copy(), capabilities,
                 itemId == null ? "" : itemId.getNamespace());
     }
 
-    public boolean hasRadio(ServerPlayerEntity player) {
+    public boolean hasRadio(ServerPlayer player) {
         if ("HAND".equals(radioConfig.deviceLocation)) {
-            return isRadio(player.getMainHandStack())
-                    || (radioConfig.allowOffHand && isRadio(player.getOffHandStack()));
+            return isRadio(player.getMainHandItem())
+                    || (radioConfig.allowOffHand && isRadio(player.getOffhandItem()));
         }
-        int upper = "HOTBAR".equals(radioConfig.deviceLocation) ? 9 : player.getInventory().size();
+        int upper = "HOTBAR".equals(radioConfig.deviceLocation) ? 9 : player.getInventory().getContainerSize();
         for (int slot = 0; slot < upper; slot++) {
             if (slot < 9 && !radioConfig.allowHotbar) continue;
             if (slot >= 9 && slot < 36 && !radioConfig.allowMainInventory) continue;
             if (slot >= 36 && slot < 40 && !radioConfig.allowArmorSlots) continue;
             if (slot >= 40 && !radioConfig.allowOffHand) continue;
-            if (isRadio(player.getInventory().getStack(slot))) return true;
+            if (isRadio(player.getInventory().getItem(slot))) return true;
         }
         return false;
     }
@@ -114,14 +113,14 @@ public final class DeviceItemResolver {
         Set<Item> resolved = new LinkedHashSet<>();
         for (String rawId : configuredIds) {
             Identifier id = Identifier.tryParse(rawId);
-            if (id == null || !Registries.ITEM.containsId(id)) {
+            if (id == null || !BuiltInRegistries.ITEM.containsKey(id)) {
                 if (warnMissing) {
                     RpVoiceAddon.LOGGER.warn("{}-Item '{}' ist ungültig oder nicht installiert und wird ignoriert",
                             deviceName, rawId);
                 }
                 continue;
             }
-            resolved.add(Registries.ITEM.get(id));
+            resolved.add(BuiltInRegistries.ITEM.getValue(id));
         }
         if (resolved.isEmpty() && fallback != null) {
             RpVoiceAddon.LOGGER.warn("Keine gültigen {}-Items konfiguriert; Standard-Item wird verwendet",

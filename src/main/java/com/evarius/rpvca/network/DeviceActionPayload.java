@@ -1,20 +1,20 @@
 package com.evarius.rpvca.network;
 
 import com.evarius.rpvca.RpVoiceAddon;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-public record DeviceActionPayload(String action, String value) implements CustomPayload {
-    public static final Id<DeviceActionPayload> ID = new Id<>(RpVoiceAddon.id("device_action"));
-    public static final PacketCodec<RegistryByteBuf, DeviceActionPayload> CODEC = PacketCodec.tuple(
-            PacketCodecs.string(32), DeviceActionPayload::action,
-            PacketCodecs.string(256), DeviceActionPayload::value,
+public record DeviceActionPayload(String action, String value) implements CustomPacketPayload {
+    public static final Type<DeviceActionPayload> ID = new Type<>(RpVoiceAddon.id("device_action"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, DeviceActionPayload> CODEC = StreamCodec.composite(
+            ByteBufCodecs.stringUtf8(32), DeviceActionPayload::action,
+            ByteBufCodecs.stringUtf8(256), DeviceActionPayload::value,
             DeviceActionPayload::new);
 
     @Override
-    public Id<? extends CustomPayload> getId() {
+    public Type<? extends CustomPacketPayload> type() {
         return ID;
     }
 }

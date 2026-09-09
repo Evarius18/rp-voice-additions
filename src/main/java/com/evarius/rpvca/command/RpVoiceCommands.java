@@ -7,12 +7,12 @@ import com.evarius.rpvca.config.SpeechConfig;
 import com.evarius.rpvca.permissions.VanillaPermissionLevels;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 
-import static net.minecraft.server.command.CommandManager.argument;
-import static net.minecraft.server.command.CommandManager.literal;
+import static net.minecraft.commands.Commands.argument;
+import static net.minecraft.commands.Commands.literal;
 
 public final class RpVoiceCommands {
     private RpVoiceCommands() {
@@ -85,160 +85,160 @@ public final class RpVoiceCommands {
         });
     }
 
-    private static int status(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+    private static int status(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         phoneStatus(source);
         radioStatus(source);
         rangeStatus(source);
         return 1;
     }
 
-    private static int rangeStatus(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        ServerPlayerEntity player = source.getPlayerOrThrow();
-        SpeechConfig.Mode mode = services().speech().mode(player.getUuid());
-        source.sendFeedback(() -> Text.translatable("command.rp-vca.speech.status",
-                Text.translatable(com.evarius.rpvca.speech.SpeechMode.translationKey(mode.id)),
+    private static int rangeStatus(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        SpeechConfig.Mode mode = services().speech().mode(player.getUUID());
+        source.sendSuccess(() -> Component.translatable("command.rp-vca.speech.status",
+                Component.translatable(com.evarius.rpvca.speech.SpeechMode.translationKey(mode.id)),
                 "whisper".equals(mode.id) ? "SVC" : mode.distance), false);
         return 1;
     }
 
-    private static int setRange(ServerCommandSource source, String id) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        ServerPlayerEntity player = source.getPlayerOrThrow();
-        SpeechConfig.Mode mode = services().speech().setMode(player.getUuid(), id);
+    private static int setRange(CommandSourceStack source, String id) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        SpeechConfig.Mode mode = services().speech().setMode(player.getUUID(), id);
         if (mode == null) {
-            source.sendError(Text.translatable("command.rp-vca.speech.unknown"));
+            source.sendFailure(Component.translatable("command.rp-vca.speech.unknown"));
             return 0;
         }
-        source.sendFeedback(() -> Text.translatable("command.rp-vca.speech.changed",
-                Text.translatable(com.evarius.rpvca.speech.SpeechMode.translationKey(mode.id)),
+        source.sendSuccess(() -> Component.translatable("command.rp-vca.speech.changed",
+                Component.translatable(com.evarius.rpvca.speech.SpeechMode.translationKey(mode.id)),
                 "whisper".equals(mode.id) ? "SVC" : mode.distance), false);
         return 1;
     }
 
-    private static int reload(ServerCommandSource source) {
+    private static int reload(CommandSourceStack source) {
         RpVoiceAddon.reload(source.getServer());
-        source.sendFeedback(() -> Text.translatable("command.rp-vca.reload"), true);
+        source.sendSuccess(() -> Component.translatable("command.rp-vca.reload"), true);
         return 1;
     }
 
-    private static int phoneStatus(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        ServerPlayerEntity player = source.getPlayerOrThrow();
-        source.sendFeedback(() -> Text.literal(services().phones().status(player)), false);
+    private static int phoneStatus(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        source.sendSuccess(() -> Component.literal(services().phones().status(player)), false);
         return 1;
     }
 
-    private static int call(ServerCommandSource source, String destination) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        ServerPlayerEntity player = source.getPlayerOrThrow();
+    private static int call(CommandSourceStack source, String destination) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
         return services().phones().call(player, destination) ? 1 : 0;
     }
 
-    private static int answer(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        return services().phones().answer(source.getPlayerOrThrow()) ? 1 : 0;
+    private static int answer(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        return services().phones().answer(source.getPlayerOrException()) ? 1 : 0;
     }
 
-    private static int decline(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        return services().phones().decline(source.getPlayerOrThrow()) ? 1 : 0;
+    private static int decline(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        return services().phones().decline(source.getPlayerOrException()) ? 1 : 0;
     }
 
-    private static int hangup(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        return services().phones().hangup(source.getPlayerOrThrow()) ? 1 : 0;
+    private static int hangup(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        return services().phones().hangup(source.getPlayerOrException()) ? 1 : 0;
     }
 
-    private static int speaker(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        services().phones().toggleSpeaker(source.getPlayerOrThrow());
+    private static int speaker(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        services().phones().toggleSpeaker(source.getPlayerOrException());
         return 1;
     }
 
-    private static int listContacts(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        ServerPlayerEntity player = source.getPlayerOrThrow();
+    private static int listContacts(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
         java.util.Map<String, String> contacts = services().phones().getContacts(player);
-        source.sendFeedback(() -> contacts.isEmpty()
-                ? Text.translatable("command.rp-vca.contacts.empty")
-                : Text.translatable("command.rp-vca.contacts.list", contacts), false);
+        source.sendSuccess(() -> contacts.isEmpty()
+                ? Component.translatable("command.rp-vca.contacts.empty")
+                : Component.translatable("command.rp-vca.contacts.list", contacts), false);
         return contacts.size();
     }
 
-    private static int addContact(ServerCommandSource source, String name, String number)
+    private static int addContact(CommandSourceStack source, String name, String number)
             throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        ServerPlayerEntity player = source.getPlayerOrThrow();
+        ServerPlayer player = source.getPlayerOrException();
         com.evarius.rpvca.api.ContactMutationResult result =
                 services().phones().upsertContact(player, name, number);
-        source.sendFeedback(() -> result.successful()
-                ? Text.translatable("command.rp-vca.contact.saved", name, number)
-                : Text.translatable("command.rp-vca.contact.failed", result), false);
+        source.sendSuccess(() -> result.successful()
+                ? Component.translatable("command.rp-vca.contact.saved", name, number)
+                : Component.translatable("command.rp-vca.contact.failed", result), false);
         return result.successful() ? 1 : 0;
     }
 
-    private static int removeContact(ServerCommandSource source, String name)
+    private static int removeContact(CommandSourceStack source, String name)
             throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        ServerPlayerEntity player = source.getPlayerOrThrow();
+        ServerPlayer player = source.getPlayerOrException();
         com.evarius.rpvca.api.ContactMutationResult result =
                 services().phones().removeContact(player, name);
-        source.sendFeedback(() -> result.successful()
-                ? Text.translatable("command.rp-vca.contact.removed")
-                : Text.translatable("command.rp-vca.contact.failed", result), false);
+        source.sendSuccess(() -> result.successful()
+                ? Component.translatable("command.rp-vca.contact.removed")
+                : Component.translatable("command.rp-vca.contact.failed", result), false);
         return result.successful() ? 1 : 0;
     }
 
-    private static int clearPlayerHistory(ServerCommandSource source, String playerName)
+    private static int clearPlayerHistory(CommandSourceStack source, String playerName)
             throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        ServerPlayerEntity administrator = source.getPlayerOrThrow();
+        ServerPlayer administrator = source.getPlayerOrException();
         java.util.Optional<java.util.UUID> target = services().phones().findPlayerIdByName(playerName);
         if (target.isEmpty()) {
-            source.sendError(Text.translatable("command.rp-vca.profile.not_found"));
+            source.sendFailure(Component.translatable("command.rp-vca.profile.not_found"));
             return 0;
         }
         com.evarius.rpvca.api.HistoryMutationResult result =
                 services().phones().clearCallHistory(administrator, target.get());
-        source.sendFeedback(() -> result.successful()
-                ? Text.translatable("command.rp-vca.history.player_cleared", playerName)
-                : Text.translatable("command.rp-vca.history.failed", result), true);
+        source.sendSuccess(() -> result.successful()
+                ? Component.translatable("command.rp-vca.history.player_cleared", playerName)
+                : Component.translatable("command.rp-vca.history.failed", result), true);
         return result.successful() ? 1 : 0;
     }
 
-    private static int clearAllHistories(ServerCommandSource source)
+    private static int clearAllHistories(CommandSourceStack source)
             throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         com.evarius.rpvca.api.HistoryMutationResult result =
-                services().phones().clearAllCallHistories(source.getPlayerOrThrow());
-        source.sendFeedback(() -> result.successful()
-                ? Text.translatable("command.rp-vca.history.all_cleared")
-                : Text.translatable("command.rp-vca.history.failed", result), true);
+                services().phones().clearAllCallHistories(source.getPlayerOrException());
+        source.sendSuccess(() -> result.successful()
+                ? Component.translatable("command.rp-vca.history.all_cleared")
+                : Component.translatable("command.rp-vca.history.failed", result), true);
         return result.successful() ? 1 : 0;
     }
 
-    private static int radioStatus(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        ServerPlayerEntity player = source.getPlayerOrThrow();
-        source.sendFeedback(() -> Text.literal(services().radios().status(player)), false);
+    private static int radioStatus(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        source.sendSuccess(() -> Component.literal(services().radios().status(player)), false);
         return 1;
     }
 
-    private static int tune(ServerCommandSource source, String channel) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        return services().radios().tune(source.getPlayerOrThrow(), channel) ? 1 : 0;
+    private static int tune(CommandSourceStack source, String channel) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        return services().radios().tune(source.getPlayerOrException(), channel) ? 1 : 0;
     }
 
-    private static int radioOff(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        services().radios().off(source.getPlayerOrThrow());
+    private static int radioOff(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        services().radios().off(source.getPlayerOrException());
         return 1;
     }
 
-    private static int radioTransmit(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        services().radios().toggleTransmit(source.getPlayerOrThrow());
+    private static int radioTransmit(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        services().radios().toggleTransmit(source.getPlayerOrException());
         return 1;
     }
 
-    private static int listChannels(ServerCommandSource source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+    private static int listChannels(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         java.util.List<RadioConfig.Channel> available = services().radios()
-                .accessibleChannels(source.getPlayerOrThrow());
+                .accessibleChannels(source.getPlayerOrException());
         String channels = available.stream()
                 .map(channel -> channel.id + "=" + channel.displayName)
                 .reduce((first, second) -> first + ", " + second).orElse("keine");
-        source.sendFeedback(() -> Text.translatable("command.rp-vca.radio.channels", channels), false);
+        source.sendSuccess(() -> Component.translatable("command.rp-vca.radio.channels", channels), false);
         return available.size();
     }
 
-    private static int listTowers(ServerCommandSource source) {
+    private static int listTowers(CommandSourceStack source) {
         int count = Math.toIntExact(services().towers().count(
                 com.evarius.rpvca.state.TowerRegistry.TowerType.CELLULAR));
-        source.sendFeedback(() -> Text.translatable("command.rp-vca.towers", count), false);
+        source.sendSuccess(() -> Component.translatable("command.rp-vca.towers", count), false);
         return count;
     }
 

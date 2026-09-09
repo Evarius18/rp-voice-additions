@@ -3,8 +3,6 @@ package com.evarius.rpvca.permissions;
 import com.evarius.rpvca.compatibility.CompatibilityManager;
 import com.evarius.rpvca.config.CompatibilityConfig;
 import com.evarius.rpvca.config.RadioConfig;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.List;
 import java.util.LinkedHashSet;
 import java.util.Locale;
@@ -12,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.server.level.ServerPlayer;
 
 /** Combines vanilla team access with optional institution-derived grants. */
 public final class RadioPermissionResolver {
@@ -26,7 +25,7 @@ public final class RadioPermissionResolver {
                 normalizeKey(key), channels.stream().map(value -> value.toLowerCase(Locale.ROOT)).toList()));
     }
 
-    public boolean hasAccess(ServerPlayerEntity player, RadioConfig.Channel channel) {
+    public boolean hasAccess(ServerPlayer player, RadioConfig.Channel channel) {
         if (channel.requiredTeam == null || channel.requiredTeam.isBlank()) {
             return true;
         }
@@ -79,13 +78,13 @@ public final class RadioPermissionResolver {
         return normalized.toString();
     }
 
-    private Set<String> memberships(ServerPlayerEntity player) {
+    private Set<String> memberships(ServerPlayer player) {
         LinkedHashSet<String> resolved = new LinkedHashSet<>();
-        if (player.getScoreboardTeam() != null) {
-            resolved.add(normalizeKey(player.getScoreboardTeam().getName()));
+        if (player.getTeam() != null) {
+            resolved.add(normalizeKey(player.getTeam().getName()));
         }
         long now = System.currentTimeMillis();
-        MembershipCache cached = membershipCache.get(player.getUuid());
+        MembershipCache cached = membershipCache.get(player.getUUID());
         if (cached != null && cached.expiresAt() > now) {
             resolved.addAll(cached.keys());
             return Set.copyOf(resolved);
@@ -95,7 +94,7 @@ public final class RadioPermissionResolver {
                 .map(RadioPermissionResolver::normalizeKey)
                 .filter(value -> !value.isBlank())
                 .collect(java.util.stream.Collectors.toUnmodifiableSet());
-        membershipCache.put(player.getUuid(), new MembershipCache(keys, now + 2_000L));
+        membershipCache.put(player.getUUID(), new MembershipCache(keys, now + 2_000L));
         resolved.addAll(keys);
         return Set.copyOf(resolved);
     }

@@ -10,18 +10,17 @@ import com.evarius.rpvca.network.CommunicationNetworking;
 import com.evarius.rpvca.permissions.VanillaPermissionLevels;
 import com.evarius.rpvca.state.JsonStateStore;
 import com.evarius.rpvca.voice.SirenVoiceEngine;
-import net.minecraft.block.Block;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.WorldSavePath;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.storage.LevelResource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,27 +61,27 @@ public final class SirenService implements SirenApi {
         this.server = server;
         this.config = config;
         this.store = store;
-        this.announcementDirectory = server.getSavePath(WorldSavePath.ROOT)
+        this.announcementDirectory = server.getWorldPath(LevelResource.ROOT)
                 .resolve("rp-voice-additions").resolve("announcements");
         data = store.load("sirens.json", Data.class, Data::new);
         normalizeState();
         reconcile();
     }
 
-    public synchronized UUID registerSiren(RegistryKey<World> world, BlockPos pos, String variant) {
+    public synchronized UUID registerSiren(ResourceKey<Level> world, BlockPos pos, String variant) {
         SirenNode existing = sirenAt(world, pos);
         if (existing != null) {
             existing.variant = variant;
             save();
             return existing.id;
         }
-        SirenNode node = new SirenNode(UUID.randomUUID(), world.getValue().toString(), pos, variant);
+        SirenNode node = new SirenNode(UUID.randomUUID(), world.identifier().toString(), pos, variant);
         data.sirens.add(node);
         save();
         return node.id;
     }
 
-    public synchronized void removeSiren(RegistryKey<World> world, BlockPos pos) {
+    public synchronized void removeSiren(ResourceKey<Level> world, BlockPos pos) {
         Set<UUID> removed = new LinkedHashSet<>();
         data.sirens.removeIf(node -> {
             boolean matches = node.samePosition(world, pos);
@@ -95,19 +94,19 @@ public final class SirenService implements SirenApi {
         }
     }
 
-    public synchronized UUID registerController(RegistryKey<World> world, BlockPos pos) {
+    public synchronized UUID registerController(ResourceKey<Level> world, BlockPos pos) {
         Controller existing = controllerAt(world, pos);
         if (existing != null) {
             return existing.id;
         }
-        Controller controller = new Controller(UUID.randomUUID(), world.getValue().toString(), pos,
+        Controller controller = new Controller(UUID.randomUUID(), world.identifier().toString(), pos,
                 "block.rp-vca.siren_controller");
         data.controllers.add(controller);
         save();
         return controller.id;
     }
 
-    public synchronized void removeController(RegistryKey<World> world, BlockPos pos) {
+    public synchronized void removeController(ResourceKey<Level> world, BlockPos pos) {
         Controller controller = controllerAt(world, pos);
         if (controller == null) {
             return;
@@ -121,43 +120,43 @@ public final class SirenService implements SirenApi {
         save();
     }
 
-    public synchronized boolean openController(ServerPlayerEntity player, RegistryKey<World> world, BlockPos pos) {
+    public synchronized boolean openController(ServerPlayer player, ResourceKey<Level> world, BlockPos pos) {
         if (!config.enabled) {
-            player.sendMessage(Text.translatable("message.rp-vca.siren.disabled"), true);
+            player.displayClientMessage(Component.translatable("message.rp-vca.siren.disabled"), true);
             return false;
         }
         Controller controller = controllerAt(world, pos);
-        if (controller == null || player.squaredDistanceTo(pos.getX() + 0.5D,
+        if (controller == null || player.distanceToSqr(pos.getX() + 0.5D,
                 pos.getY() + 0.5D, pos.getZ() + 0.5D) > 64.0D) {
             return false;
         }
-        openSessions.put(player.getUuid(), new OpenSession(controller.id, System.currentTimeMillis()));
+        openSessions.put(player.getUUID(), new OpenSession(controller.id, System.currentTimeMillis()));
         sendSnapshot(player, "");
         return true;
     }
 
-    public synchronized SirenActionResult beginLinkMode(ServerPlayerEntity player) {
+    public synchronized SirenActionResult beginLinkMode(ServerPlayer player) {
         Controller controller = controllerForSession(player);
         if (controller == null) return SirenActionResult.INVALID_REQUEST;
         if (!canConfigure(player)) return SirenActionResult.NOT_ALLOWED;
         if (!isHoldingProgrammer(player)) return SirenActionResult.PROGRAMMER_REQUIRED;
-        pendingLinks.put(player.getUuid(), controller.id);
-        player.sendMessage(Text.translatable("message.rp-vca.siren.link_mode"), true);
+        pendingLinks.put(player.getUUID(), controller.id);
+        player.displayClientMessage(Component.translatable("message.rp-vca.siren.link_mode"), true);
         return SirenActionResult.SUCCESS;
     }
 
-    public synchronized SirenActionResult completeLink(ServerPlayerEntity player,
-                                                        RegistryKey<World> world, BlockPos pos) {
-        UUID controllerId = pendingLinks.remove(player.getUuid());
+    public synchronized SirenActionResult completeLink(ServerPlayer player,
+                                                        ResourceKey<Level> world, BlockPos pos) {
+        UUID controllerId = pendingLinks.remove(player.getUUID());
         if (controllerId == null) return SirenActionResult.INVALID_REQUEST;
         if (!isHoldingProgrammer(player)) {
-            player.sendMessage(Text.translatable("message.rp-vca.siren.programmer_required"), true);
+            player.displayClientMessage(Component.translatable("message.rp-vca.siren.programmer_required"), true);
             return SirenActionResult.PROGRAMMER_REQUIRED;
         }
         Controller controller = controller(controllerId);
         SirenNode siren = sirenAt(world, pos);
-        ServerWorld playerWorld = player.getEntityWorld();
-        if (siren == null && playerWorld.getRegistryKey().equals(world)) {
+        ServerLevel playerWorld = player.level();
+        if (siren == null && playerWorld.dimension().equals(world)) {
             Block block = playerWorld.getBlockState(pos).getBlock();
             if (block == ModContent.MAST_SIRENE_ZWEI || block == ModContent.MAST_SIRENE_DREI) {
                 registerSiren(world, pos, block == ModContent.MAST_SIRENE_DREI ? "three_head" : "two_head");
@@ -167,12 +166,12 @@ public final class SirenService implements SirenApi {
         if (controller == null || siren == null) return SirenActionResult.NOT_FOUND;
         if (!canConfigure(player)) return SirenActionResult.NOT_ALLOWED;
         if (!config.allowCrossDimensionLinks && !controller.dimension.equals(siren.dimension)) {
-            player.sendMessage(Text.translatable("message.rp-vca.siren.cross_dimension_denied"), true);
+            player.displayClientMessage(Component.translatable("message.rp-vca.siren.cross_dimension_denied"), true);
             return SirenActionResult.INVALID_REQUEST;
         }
         if (controller.linkedSirens.remove(siren.id)) {
             save();
-            player.sendMessage(Text.translatable("message.rp-vca.siren.unlinked"), true);
+            player.displayClientMessage(Component.translatable("message.rp-vca.siren.unlinked"), true);
             return SirenActionResult.SUCCESS;
         }
         if (controller.linkedSirens.size() >= config.maxLinkedSirensPerController) {
@@ -180,7 +179,7 @@ public final class SirenService implements SirenApi {
         }
         controller.linkedSirens.add(siren.id);
         save();
-        player.sendMessage(Text.translatable("message.rp-vca.siren.linked"), true);
+        player.displayClientMessage(Component.translatable("message.rp-vca.siren.linked"), true);
         return SirenActionResult.SUCCESS;
     }
 
@@ -188,17 +187,17 @@ public final class SirenService implements SirenApi {
         return pendingLinks.containsKey(playerId);
     }
 
-    public synchronized SirenActionResult triggerFromOpenSession(ServerPlayerEntity player, String scenarioId) {
+    public synchronized SirenActionResult triggerFromOpenSession(ServerPlayer player, String scenarioId) {
         Controller controller = controllerForSession(player);
         return controller == null ? SirenActionResult.INVALID_REQUEST
                 : triggerScenario(player, controller.id, scenarioId);
     }
 
     @Override
-    public synchronized SirenActionResult triggerScenario(ServerPlayerEntity actor,
+    public synchronized SirenActionResult triggerScenario(ServerPlayer actor,
                                                            UUID controllerId, String scenarioId) {
         if (!canOperate(actor)) return SirenActionResult.NOT_ALLOWED;
-        return triggerInternal(controllerId, scenarioId, actor.getUuidAsString());
+        return triggerInternal(controllerId, scenarioId, actor.getStringUUID());
     }
 
     @Override
@@ -230,9 +229,9 @@ public final class SirenService implements SirenApi {
                 scenario.id, controllerId, sourceId);
         tickActiveScenarios(System.currentTimeMillis());
         try {
-            ServerPlayerEntity operator = server.getPlayerManager().getPlayer(UUID.fromString(sourceId));
-            if (operator != null && !SirenVoiceEngine.isPlayerListening(operator.getUuid())) {
-                operator.sendMessage(Text.translatable("message.rp-vca.siren.voice_chat_disabled"), true);
+            ServerPlayer operator = server.getPlayerList().getPlayer(UUID.fromString(sourceId));
+            if (operator != null && !SirenVoiceEngine.isPlayerListening(operator.getUUID())) {
+                operator.displayClientMessage(Component.translatable("message.rp-vca.siren.voice_chat_disabled"), true);
             }
         } catch (IllegalArgumentException ignored) {
             // Scheduled alarms and trusted integrations use descriptive source identifiers.
@@ -241,14 +240,14 @@ public final class SirenService implements SirenApi {
     }
 
     @Override
-    public synchronized SirenActionResult stop(ServerPlayerEntity actor, UUID controllerId) {
+    public synchronized SirenActionResult stop(ServerPlayer actor, UUID controllerId) {
         if (!canOperate(actor)) return SirenActionResult.NOT_ALLOWED;
         if (controller(controllerId) == null) return SirenActionResult.NOT_FOUND;
         stopInternal(controllerId);
         return SirenActionResult.SUCCESS;
     }
 
-    public synchronized SirenActionResult stopFromOpenSession(ServerPlayerEntity player) {
+    public synchronized SirenActionResult stopFromOpenSession(ServerPlayer player) {
         Controller controller = controllerForSession(player);
         return controller == null ? SirenActionResult.INVALID_REQUEST : stop(player, controller.id);
     }
@@ -259,13 +258,13 @@ public final class SirenService implements SirenApi {
     }
 
     @Override
-    public synchronized SirenActionResult schedule(ServerPlayerEntity actor, UUID controllerId,
+    public synchronized SirenActionResult schedule(ServerPlayer actor, UUID controllerId,
                                                     String scenarioId, Instant executeAt) {
         if (!canConfigure(actor)) return SirenActionResult.NOT_ALLOWED;
-        return scheduleInternal(controllerId, scenarioId, executeAt, actor.getUuidAsString());
+        return scheduleInternal(controllerId, scenarioId, executeAt, actor.getStringUUID());
     }
 
-    public synchronized SirenActionResult scheduleFromOpenSession(ServerPlayerEntity actor,
+    public synchronized SirenActionResult scheduleFromOpenSession(ServerPlayer actor,
                                                                    String scenarioId, String time) {
         Controller controller = controllerForSession(actor);
         if (controller == null) return SirenActionResult.INVALID_REQUEST;
@@ -291,14 +290,14 @@ public final class SirenService implements SirenApi {
     }
 
     @Override
-    public synchronized SirenActionResult cancelScheduled(ServerPlayerEntity actor, UUID alarmId) {
+    public synchronized SirenActionResult cancelScheduled(ServerPlayer actor, UUID alarmId) {
         if (!canConfigure(actor)) return SirenActionResult.NOT_ALLOWED;
         boolean removed = data.scheduled.removeIf(alarm -> alarm.id.equals(alarmId));
         if (removed) save();
         return removed ? SirenActionResult.SUCCESS : SirenActionResult.NOT_FOUND;
     }
 
-    public synchronized SirenActionResult cancelFromOpenSession(ServerPlayerEntity actor, UUID alarmId) {
+    public synchronized SirenActionResult cancelFromOpenSession(ServerPlayer actor, UUID alarmId) {
         Controller controller = controllerForSession(actor);
         if (controller == null || data.scheduled.stream().noneMatch(alarm ->
                 alarm.id.equals(alarmId) && alarm.controllerId.equals(controller.id))) {
@@ -308,32 +307,32 @@ public final class SirenService implements SirenApi {
     }
 
     @Override
-    public synchronized SirenActionResult startLiveAnnouncement(ServerPlayerEntity actor, UUID controllerId) {
+    public synchronized SirenActionResult startLiveAnnouncement(ServerPlayer actor, UUID controllerId) {
         if (!canConfigure(actor)) return SirenActionResult.NOT_ALLOWED;
         Controller controller = controller(controllerId);
         if (controller == null) return SirenActionResult.NOT_FOUND;
         List<SirenEmitter> emitters = resolveEmitters(controller);
         if (emitters.isEmpty()) return SirenActionResult.NO_LINKED_SIRENS;
         if (!SirenVoiceEngine.available()) return SirenActionResult.VOICE_CHAT_UNAVAILABLE;
-        if (!SirenVoiceEngine.startLive(actor.getUuid(), controller.id, emitters, config.audibleDistance)) {
+        if (!SirenVoiceEngine.startLive(actor.getUUID(), controller.id, emitters, config.audibleDistance)) {
             return SirenActionResult.ALREADY_ACTIVE;
         }
         return SirenActionResult.SUCCESS;
     }
 
-    public synchronized SirenActionResult startLiveFromOpenSession(ServerPlayerEntity actor) {
+    public synchronized SirenActionResult startLiveFromOpenSession(ServerPlayer actor) {
         Controller controller = controllerForSession(actor);
         return controller == null ? SirenActionResult.INVALID_REQUEST
                 : startLiveAnnouncement(actor, controller.id);
     }
 
     @Override
-    public synchronized SirenActionResult stopLiveAnnouncement(ServerPlayerEntity actor) {
-        return SirenVoiceEngine.stopLive(actor.getUuid())
+    public synchronized SirenActionResult stopLiveAnnouncement(ServerPlayer actor) {
+        return SirenVoiceEngine.stopLive(actor.getUUID())
                 ? SirenActionResult.SUCCESS : SirenActionResult.NOT_FOUND;
     }
 
-    public synchronized SirenActionResult startRecording(ServerPlayerEntity actor) {
+    public synchronized SirenActionResult startRecording(ServerPlayer actor) {
         Controller controller = controllerForSession(actor);
         if (controller == null) return SirenActionResult.INVALID_REQUEST;
         if (!canConfigure(actor)) return SirenActionResult.NOT_ALLOWED;
@@ -341,16 +340,16 @@ public final class SirenService implements SirenApi {
                 .filter(value -> value.controllerId.equals(controller.id)).count();
         if (count >= config.maximumSavedAnnouncementsPerController) return SirenActionResult.LIMIT_REACHED;
         if (!SirenVoiceEngine.available()) return SirenActionResult.VOICE_CHAT_UNAVAILABLE;
-        return SirenVoiceEngine.startRecording(actor.getUuid(), config.maximumAnnouncementSeconds)
+        return SirenVoiceEngine.startRecording(actor.getUUID(), config.maximumAnnouncementSeconds)
                 ? SirenActionResult.SUCCESS : SirenActionResult.ALREADY_ACTIVE;
     }
 
-    public synchronized SirenActionResult stopAndSaveRecording(ServerPlayerEntity actor, String requestedName) {
+    public synchronized SirenActionResult stopAndSaveRecording(ServerPlayer actor, String requestedName) {
         Controller controller = controllerForSession(actor);
         if (controller == null || !canConfigure(actor)) return SirenActionResult.NOT_ALLOWED;
         String name = normalizeAnnouncementName(requestedName);
         if (name == null) return SirenActionResult.INVALID_REQUEST;
-        Optional<SirenVoiceEngine.RecordedAudio> recording = SirenVoiceEngine.stopRecording(actor.getUuid());
+        Optional<SirenVoiceEngine.RecordedAudio> recording = SirenVoiceEngine.stopRecording(actor.getUUID());
         if (recording.isEmpty() || recording.get().pcm().length == 0) return SirenActionResult.NOT_FOUND;
         UUID id = UUID.randomUUID();
         Path target = announcementDirectory.resolve(id + ".pcm");
@@ -374,7 +373,7 @@ public final class SirenService implements SirenApi {
         }
     }
 
-    public synchronized SirenActionResult playAnnouncement(ServerPlayerEntity actor, UUID announcementId) {
+    public synchronized SirenActionResult playAnnouncement(ServerPlayer actor, UUID announcementId) {
         Controller controller = controllerForSession(actor);
         if (controller == null || !canOperate(actor)) return SirenActionResult.NOT_ALLOWED;
         Announcement announcement = data.announcements.stream().filter(value -> value.id.equals(announcementId)
@@ -394,7 +393,7 @@ public final class SirenService implements SirenApi {
         }
     }
 
-    public synchronized SirenActionResult removeAnnouncement(ServerPlayerEntity actor, UUID announcementId) {
+    public synchronized SirenActionResult removeAnnouncement(ServerPlayer actor, UUID announcementId) {
         Controller controller = controllerForSession(actor);
         if (controller == null || !canConfigure(actor)) return SirenActionResult.NOT_ALLOWED;
         Announcement announcement = data.announcements.stream().filter(value -> value.id.equals(announcementId)
@@ -478,7 +477,7 @@ public final class SirenService implements SirenApi {
         )).toList();
     }
 
-    public synchronized void sendSnapshot(ServerPlayerEntity player, String noticeKey) {
+    public synchronized void sendSnapshot(ServerPlayer player, String noticeKey) {
         Controller controller = controllerForSession(player);
         if (controller == null) return;
         SirenControllerSnapshot snapshot = new SirenControllerSnapshot();
@@ -487,8 +486,8 @@ public final class SirenService implements SirenApi {
         snapshot.linkedSirens = controller.linkedSirens.size();
         snapshot.active = SirenVoiceEngine.isControllerActive(controller.id)
                 || activeScenarios.containsKey(controller.id);
-        snapshot.live = SirenVoiceEngine.isLive(player.getUuid());
-        snapshot.recording = SirenVoiceEngine.isRecording(player.getUuid());
+        snapshot.live = SirenVoiceEngine.isLive(player.getUUID());
+        snapshot.recording = SirenVoiceEngine.isRecording(player.getUUID());
         snapshot.notice = noticeKey == null ? "" : noticeKey;
         config.scenarios.forEach(scenario -> snapshot.scenarios.add(
                 new SirenControllerSnapshot.NamedOption(scenario.id, scenario.displayName)));
@@ -528,33 +527,33 @@ public final class SirenService implements SirenApi {
         return normalized.isEmpty() || normalized.length() > 48 ? null : normalized;
     }
 
-    private boolean canOperate(ServerPlayerEntity player) {
+    private boolean canOperate(ServerPlayer player) {
         return hasPermission(player, config.operatePermissionLevel, config.operatorMembershipKeys);
     }
 
-    private boolean isHoldingProgrammer(ServerPlayerEntity player) {
-        return player.getMainHandStack().isOf(ModContent.SIREN_PROGRAMMER)
-                || player.getOffHandStack().isOf(ModContent.SIREN_PROGRAMMER);
+    private boolean isHoldingProgrammer(ServerPlayer player) {
+        return player.getMainHandItem().is(ModContent.SIREN_PROGRAMMER)
+                || player.getOffhandItem().is(ModContent.SIREN_PROGRAMMER);
     }
 
-    private boolean canConfigure(ServerPlayerEntity player) {
+    private boolean canConfigure(ServerPlayer player) {
         return hasPermission(player, config.configurePermissionLevel, config.configurationMembershipKeys);
     }
 
-    private boolean hasPermission(ServerPlayerEntity player, int operatorLevel, List<String> allowedKeys) {
+    private boolean hasPermission(ServerPlayer player, int operatorLevel, List<String> allowedKeys) {
         if (player == null) return false;
         if (VanillaPermissionLevels.has(player, operatorLevel)) return true;
         Set<String> memberships = new LinkedHashSet<>();
-        if (player.getScoreboardTeam() != null) {
-            memberships.add(player.getScoreboardTeam().getName().trim().toLowerCase(Locale.ROOT));
+        if (player.getTeam() != null) {
+            memberships.add(player.getTeam().getName().trim().toLowerCase(Locale.ROOT));
         }
         com.evarius.rpvca.api.RpVcaApi.institutionMembershipKeys(player).stream()
                 .map(value -> value.trim().toLowerCase(Locale.ROOT)).forEach(memberships::add);
         return allowedKeys.stream().anyMatch(memberships::contains);
     }
 
-    private Controller controllerForSession(ServerPlayerEntity player) {
-        OpenSession session = openSessions.get(player.getUuid());
+    private Controller controllerForSession(ServerPlayer player) {
+        OpenSession session = openSessions.get(player.getUUID());
         return session == null ? null : controller(session.controllerId);
     }
 
@@ -562,11 +561,11 @@ public final class SirenService implements SirenApi {
         return data.controllers.stream().filter(value -> value.id.equals(id)).findFirst().orElse(null);
     }
 
-    private Controller controllerAt(RegistryKey<World> world, BlockPos pos) {
+    private Controller controllerAt(ResourceKey<Level> world, BlockPos pos) {
         return data.controllers.stream().filter(value -> value.samePosition(world, pos)).findFirst().orElse(null);
     }
 
-    private SirenNode sirenAt(RegistryKey<World> world, BlockPos pos) {
+    private SirenNode sirenAt(ResourceKey<Level> world, BlockPos pos) {
         return data.sirens.stream().filter(value -> value.samePosition(world, pos)).findFirst().orElse(null);
     }
 
@@ -583,7 +582,7 @@ public final class SirenService implements SirenApi {
             if (!ids.contains(node.id)) continue;
             Identifier dimensionId = Identifier.tryParse(node.dimension);
             if (dimensionId == null) continue;
-            ServerWorld world = server.getWorld(RegistryKey.of(RegistryKeys.WORLD, dimensionId));
+            ServerLevel world = server.getLevel(ResourceKey.create(Registries.DIMENSION, dimensionId));
             if (world != null) result.add(new SirenEmitter(node.id, world, node.pos()));
         }
         return result;
@@ -627,7 +626,7 @@ public final class SirenService implements SirenApi {
     private boolean matchesBlock(String dimension, BlockPos pos, Block... expected) {
         Identifier id = Identifier.tryParse(dimension);
         if (id == null) return false;
-        ServerWorld world = server.getWorld(RegistryKey.of(RegistryKeys.WORLD, id));
+        ServerLevel world = server.getLevel(ResourceKey.create(Registries.DIMENSION, id));
         if (world == null) return false;
         Block block = world.getBlockState(pos).getBlock();
         for (Block candidate : expected) if (block == candidate) return true;
@@ -694,8 +693,8 @@ public final class SirenService implements SirenApi {
             return new BlockPos(x, y, z);
         }
 
-        public boolean samePosition(RegistryKey<World> world, BlockPos pos) {
-            return dimension.equals(world.getValue().toString()) && x == pos.getX() && y == pos.getY() && z == pos.getZ();
+        public boolean samePosition(ResourceKey<Level> world, BlockPos pos) {
+            return dimension.equals(world.identifier().toString()) && x == pos.getX() && y == pos.getY() && z == pos.getZ();
         }
     }
 

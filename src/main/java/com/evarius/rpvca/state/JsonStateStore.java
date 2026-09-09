@@ -4,8 +4,7 @@ import com.evarius.rpvca.RpVoiceAddon;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.WorldSavePath;
-
+import net.minecraft.world.level.storage.LevelResource;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -19,7 +18,7 @@ public final class JsonStateStore {
     private final Path directory;
 
     public JsonStateStore(MinecraftServer server) {
-        directory = server.getSavePath(WorldSavePath.ROOT).resolve("rp-voice-additions");
+        directory = server.getWorldPath(LevelResource.ROOT).resolve("rp-voice-additions");
     }
 
     JsonStateStore(Path directory) {

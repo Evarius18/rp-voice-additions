@@ -2,29 +2,29 @@ package com.evarius.rpvca.client.keybind;
 
 import com.evarius.rpvca.client.ClientActions;
 import com.evarius.rpvca.client.gui.RadioScreen;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 public final class CommunicationKeybinds {
-    private static final KeyBinding.Category CATEGORY = KeyBinding.Category.create(
-            Identifier.of("rp-vca", "communication"));
-    private static KeyBinding cycleSpeech;
-    private static KeyBinding openPhone;
-    private static KeyBinding openRadio;
-    private static KeyBinding radioPtt;
-    private static KeyBinding toggleSpeaker;
-    private static KeyBinding answerCall;
-    private static KeyBinding hangupCall;
-    private static KeyBinding quietMode;
-    private static KeyBinding whisperMode;
-    private static KeyBinding normalMode;
-    private static KeyBinding shoutMode;
-    private static KeyBinding screamMode;
+    private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
+            Identifier.fromNamespaceAndPath("rp-vca", "communication"));
+    private static KeyMapping cycleSpeech;
+    private static KeyMapping openPhone;
+    private static KeyMapping openRadio;
+    private static KeyMapping radioPtt;
+    private static KeyMapping toggleSpeaker;
+    private static KeyMapping answerCall;
+    private static KeyMapping hangupCall;
+    private static KeyMapping quietMode;
+    private static KeyMapping whisperMode;
+    private static KeyMapping normalMode;
+    private static KeyMapping shoutMode;
+    private static KeyMapping screamMode;
     private static boolean transmitting;
 
     private CommunicationKeybinds() {
@@ -46,25 +46,25 @@ public final class CommunicationKeybinds {
         ClientTickEvents.END_CLIENT_TICK.register(CommunicationKeybinds::tick);
     }
 
-    private static KeyBinding bind(String id, int key) {
-        return KeyBindingHelper.registerKeyBinding(new KeyBinding(id, InputUtil.Type.KEYSYM, key, CATEGORY));
+    private static KeyMapping bind(String id, int key) {
+        return KeyBindingHelper.registerKeyBinding(new KeyMapping(id, InputConstants.Type.KEYSYM, key, CATEGORY));
     }
 
-    private static void tick(MinecraftClient client) {
-        while (cycleSpeech.wasPressed()) ClientActions.send("speech_cycle");
-        while (openPhone.wasPressed()) ClientActions.send("open_phone_request");
-        while (openRadio.wasPressed()) client.setScreen(new RadioScreen());
-        while (toggleSpeaker.wasPressed()) ClientActions.send("phone_speaker");
-        while (answerCall.wasPressed()) ClientActions.send("phone_answer",
+    private static void tick(Minecraft client) {
+        while (cycleSpeech.consumeClick()) ClientActions.send("speech_cycle");
+        while (openPhone.consumeClick()) ClientActions.send("open_phone_request");
+        while (openRadio.consumeClick()) client.setScreen(new RadioScreen());
+        while (toggleSpeaker.consumeClick()) ClientActions.send("phone_speaker");
+        while (answerCall.consumeClick()) ClientActions.send("phone_answer",
                 com.evarius.rpvca.client.ClientCommunicationState.get().phoneCallId);
-        while (hangupCall.wasPressed()) ClientActions.send("phone_hangup");
-        while (quietMode.wasPressed()) ClientActions.send("speech_set", "quiet");
-        while (whisperMode.wasPressed()) ClientActions.send("speech_set", "whisper");
-        while (normalMode.wasPressed()) ClientActions.send("speech_set", "normal");
-        while (shoutMode.wasPressed()) ClientActions.send("speech_set", "shout");
-        while (screamMode.wasPressed()) ClientActions.send("speech_set", "scream");
+        while (hangupCall.consumeClick()) ClientActions.send("phone_hangup");
+        while (quietMode.consumeClick()) ClientActions.send("speech_set", "quiet");
+        while (whisperMode.consumeClick()) ClientActions.send("speech_set", "whisper");
+        while (normalMode.consumeClick()) ClientActions.send("speech_set", "normal");
+        while (shoutMode.consumeClick()) ClientActions.send("speech_set", "shout");
+        while (screamMode.consumeClick()) ClientActions.send("speech_set", "scream");
 
-        boolean pressed = radioPtt.isPressed() && client.currentScreen == null;
+        boolean pressed = radioPtt.isDown() && client.screen == null;
         if (pressed != transmitting) {
             transmitting = pressed;
             ClientActions.send("radio_tx", Boolean.toString(pressed));
