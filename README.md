@@ -50,7 +50,7 @@ Nearby players therefore continue to hear the speaker spatially.
 
 Native whispering from Simple Voice Chat remains available and is not overridden by the additional modes.
 `WHISPER` can be part of the switching sequence in `speech.json`.
-Because the public Simple Voice Chat API 2.6.20 does not provide a setter for the microphone whisper state,
+Because the public Simple Voice Chat API does not provide a setter for the microphone whisper state,
 the native SVC whisper key is still used for this. RP-VCA detects the actual packet state on the server side
 and indicates in the HUD when the SVC key is still required.
 
