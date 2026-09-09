@@ -5,7 +5,7 @@ import com.evarius.rpvca.client.ClientCommunicationState;
 import com.evarius.rpvca.client.gui.component.HandheldButton;
 import com.evarius.rpvca.client.gui.component.HandheldScreen;
 import com.evarius.rpvca.network.CommunicationStatus;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 /** Compact mouse-operable incoming-call card; it never pauses or blurs the world. */
@@ -50,16 +50,16 @@ public final class IncomingCallScreen extends HandheldScreen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         renderHandheldFrame(context);
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
         CommunicationStatus status = ClientCommunicationState.get();
-        context.drawString(font, title, deviceLeft + 12, deviceTop + 12, 0xFFFFD166, false);
+        context.text(font, title, deviceLeft + 12, deviceTop + 12, 0xFFFFD166, false);
         Component primary = status.phonePeer.isBlank()
                 ? Component.translatable("gui.rp-vca.phone.unknown_number") : Component.literal(status.phonePeer);
-        context.drawString(font, primary, deviceLeft + 12, deviceTop + 31, TEXT, false);
+        context.text(font, primary, deviceLeft + 12, deviceTop + 31, TEXT, false);
         if (status.phonePeerSavedContact && !status.phonePeerNumber.isBlank()) {
-            context.drawString(font, status.phonePeerNumber, deviceLeft + 12,
+            context.text(font, status.phonePeerNumber, deviceLeft + 12,
                     deviceTop + 45, MUTED, false);
         }
     }

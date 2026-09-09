@@ -1,6 +1,6 @@
 package com.evarius.rpvca.client.gui.component;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -35,7 +35,7 @@ public abstract class HandheldScreen extends Screen {
         deviceTop = Math.max(6, height - deviceHeight - 10);
     }
 
-    protected final void renderHandheldFrame(GuiGraphics context) {
+    protected final void renderHandheldFrame(GuiGraphicsExtractor context) {
         context.fill(deviceLeft - 5, deviceTop + 6, deviceLeft + deviceWidth + 4,
                 deviceTop + deviceHeight + 6, 0x55000000);
         context.fill(deviceLeft + 5, deviceTop, deviceLeft + deviceWidth - 5,
@@ -47,13 +47,13 @@ public abstract class HandheldScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         // Intentionally empty: handheld screens must never obscure or blur the game world.
     }
 
     @Override
-    protected void renderBlurredBackground(GuiGraphics context) {
-        // Screen#renderBackground normally calls this in-world. This device opts out explicitly.
+    protected void extractBlurredBackground(GuiGraphicsExtractor context) {
+        // Screen#extractBackground normally calls this in-world. This device opts out explicitly.
     }
 
     @Override

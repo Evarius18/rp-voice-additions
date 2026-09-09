@@ -35,7 +35,7 @@ public final class CommunicationHud {
                     context.fill(x, y, x + 2, y + boxHeight, 0xFF39AFC2);
                     for (int index = 0; index < lines.size(); index++) {
                         Line line = lines.get(index);
-                        context.drawString(client.font, line.text(), x + 7, y + 5 + index * 12,
+                        context.text(client.font, line.text(), x + 7, y + 5 + index * 12,
                                 line.color(), true);
                     }
                 });

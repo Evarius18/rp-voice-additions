@@ -2,7 +2,7 @@ package com.evarius.rpvca.content;
 
 import com.evarius.rpvca.RpVoiceAddon;
 import com.evarius.rpvca.state.TowerRegistry;
-import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
+import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -43,7 +43,7 @@ public final class ModContent {
                     .sound(SoundType.WOOD)));
     public static final CreativeModeTab COMMUNICATION_GROUP = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB,
             RpVoiceAddon.id("communication"),
-            FabricItemGroup.builder()
+            FabricCreativeModeTab.builder()
                     .icon(() -> new ItemStack(MOBILE_PHONE))
                     .title(net.minecraft.network.chat.Component.translatable("itemgroup.rp-vca.communication"))
                     .displayItems((context, entries) -> {

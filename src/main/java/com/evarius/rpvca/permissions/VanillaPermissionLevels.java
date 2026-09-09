@@ -6,7 +6,7 @@ import net.minecraft.server.permissions.Permission;
 import net.minecraft.server.permissions.PermissionLevel;
 import net.minecraft.server.permissions.PermissionSet;
 
-/** Central adapter for Minecraft 1.21.11's level-based permission API. */
+/** Central adapter for Minecraft 26.1's level-based permission API. */
 public final class VanillaPermissionLevels {
     private VanillaPermissionLevels() {
     }

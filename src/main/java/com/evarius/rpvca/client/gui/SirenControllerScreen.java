@@ -7,7 +7,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -133,38 +133,38 @@ public final class SirenControllerScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         context.fill(left - 2, top - 2, left + panelWidth + 2, top + PANEL_HEIGHT + 2, 0xFF7B8589);
         context.fill(left, top, left + panelWidth, top + PANEL_HEIGHT, 0xFF202A2E);
         context.fill(left + 10, top + 10, left + panelWidth - 10, top + 45, 0xFF10242C);
-        context.drawString(font, title, left + 18, top + 17, 0xFF86E7EF, false);
-        context.drawString(font, localizedOrLiteral(snapshot.name), left + 18, top + 31, 0xFFD6E7EA, false);
+        context.text(font, title, left + 18, top + 17, 0xFF86E7EF, false);
+        context.text(font, localizedOrLiteral(snapshot.name), left + 18, top + 31, 0xFFD6E7EA, false);
         Component state = Component.translatable(snapshot.active ? "gui.rp-vca.siren.active" : "gui.rp-vca.siren.ready");
-        context.drawString(font, state, left + panelWidth - 18 - font.width(state),
+        context.text(font, state, left + panelWidth - 18 - font.width(state),
                 top + 18, snapshot.active ? 0xFFFF6B62 : 0xFF67D88B, false);
-        context.drawString(font, Component.translatable("gui.rp-vca.siren.linked_count", snapshot.linkedSirens),
+        context.text(font, Component.translatable("gui.rp-vca.siren.linked_count", snapshot.linkedSirens),
                 left + panelWidth - 18 - 100, top + 32, 0xFF9CB0B5, false);
 
         if (page == Page.CONTROL) {
-            context.drawString(font, optionText(selectedScenario()), left + 18, top + 70,
+            context.text(font, optionText(selectedScenario()), left + 18, top + 70,
                     0xFFF2C45C, false);
-            context.drawString(font, Component.translatable("gui.rp-vca.siren.schedule_heading"),
+            context.text(font, Component.translatable("gui.rp-vca.siren.schedule_heading"),
                     left + 18, top + 139, 0xFFB9CCD0, false);
             String next = snapshot.scheduled.isEmpty() ? Component.translatable("gui.rp-vca.siren.none").getString()
                     : TIME_FORMAT.format(Instant.ofEpochMilli(snapshot.scheduled.getFirst().executeAt()));
-            context.drawString(font, Component.translatable("gui.rp-vca.siren.next_alarm", next),
+            context.text(font, Component.translatable("gui.rp-vca.siren.next_alarm", next),
                     left + 18, top + 202, 0xFF9CB0B5, false);
         } else {
-            context.drawString(font, Component.translatable("gui.rp-vca.siren.announcements"),
+            context.text(font, Component.translatable("gui.rp-vca.siren.announcements"),
                     left + 18, top + 158, 0xFFB9CCD0, false);
-            context.drawString(font, optionText(selectedAnnouncement()), left + 18, top + 169,
+            context.text(font, optionText(selectedAnnouncement()), left + 18, top + 169,
                     0xFFD6E7EA, false);
         }
         if (snapshot.notice != null && !snapshot.notice.isBlank()) {
-            context.drawString(font, Component.translatable(snapshot.notice), left + 18,
+            context.text(font, Component.translatable(snapshot.notice), left + 18,
                     top + PANEL_HEIGHT - 14, 0xFFF2C45C, false);
         }
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 
     @Override

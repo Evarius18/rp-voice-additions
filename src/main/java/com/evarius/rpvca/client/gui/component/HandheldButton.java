@@ -1,7 +1,7 @@
 package com.evarius.rpvca.client.gui.component;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.InputWithModifiers;
@@ -24,7 +24,7 @@ public final class HandheldButton extends AbstractButton {
     }
 
     @Override
-    protected void renderContents(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    protected void extractContents(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         int background = !active ? 0xFF1A252B : isHovered() ? style.hover : style.background;
         int border = isHovered() && active ? style.accent : 0xFF334952;
         context.fill(getX(), getY(), getX() + width, getY() + height, border);
@@ -33,7 +33,7 @@ public final class HandheldButton extends AbstractButton {
             context.fill(getX() + 1, getY() + 1, getX() + 4, getY() + height - 1, style.accent);
         }
         int color = active ? 0xFFE8F7FA : 0xFF71838A;
-        context.drawCenteredString(Minecraft.getInstance().font, getMessage(),
+        context.centeredText(Minecraft.getInstance().font, getMessage(),
                 getX() + width / 2,
                 getY() + (height - 8) / 2, color);
     }

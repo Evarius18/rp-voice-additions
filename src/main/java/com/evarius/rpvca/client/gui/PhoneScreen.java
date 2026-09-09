@@ -11,7 +11,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 
@@ -244,15 +244,15 @@ public final class PhoneScreen extends HandheldScreen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         renderHandheldFrame(context);
         renderPhoneChrome(context);
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
         context.fill(deviceLeft + deviceWidth / 2 - 25, deviceTop + deviceHeight - 9,
                 deviceLeft + deviceWidth / 2 + 25, deviceTop + deviceHeight - 6, 0xFF8FA5AB);
     }
 
-    private void renderPhoneChrome(GuiGraphics context) {
+    private void renderPhoneChrome(GuiGraphicsExtractor context) {
         CommunicationStatus status = ClientCommunicationState.get();
         int innerLeft = deviceLeft + 7;
         int innerRight = deviceLeft + deviceWidth - 7;
@@ -261,37 +261,37 @@ public final class PhoneScreen extends HandheldScreen {
         context.fill(deviceLeft + deviceWidth / 2 - 18, deviceTop + 4,
                 deviceLeft + deviceWidth / 2 + 18, deviceTop + 6, 0xFF344852);
 
-        context.drawString(font, LocalTime.now().format(CLOCK), innerLeft + 7,
+        context.text(font, LocalTime.now().format(CLOCK), innerLeft + 7,
                 deviceTop + 14, TEXT, false);
         String ecosystem = status.phoneApps.isEmpty() ? "RP" : "TN";
-        context.drawString(font, ecosystem, innerRight - 34, deviceTop + 14, MUTED, false);
-        context.drawString(font, status.phoneCoverage ? "▮▮▮" : "×",
+        context.text(font, ecosystem, innerRight - 34, deviceTop + 14, MUTED, false);
+        context.text(font, status.phoneCoverage ? "▮▮▮" : "×",
                 innerRight - 17, deviceTop + 14, status.phoneCoverage ? ACCENT : 0xFFFF6B73, false);
 
-        context.drawString(font, title, innerLeft + 9, deviceTop + 38, TEXT, false);
-        context.drawString(font, pageTitle(), innerLeft + 9, deviceTop + 53, ACCENT, false);
+        context.text(font, title, innerLeft + 9, deviceTop + 38, TEXT, false);
+        context.text(font, pageTitle(), innerLeft + 9, deviceTop + 53, ACCENT, false);
         context.fill(innerLeft + 8, deviceTop + 69, innerRight - 8, deviceTop + 70, 0xFF31505B);
 
         String state = Component.translatable("gui.rp-vca.phone.state." + status.phoneState).getString();
         String peer = status.phonePeer.isBlank() ? status.phoneNumber : status.phonePeer;
         String statusLine = peer.isBlank() ? state : state + " · " + peer;
-        context.drawString(font, statusLine, innerLeft + 9, deviceTop + 73,
+        context.text(font, statusLine, innerLeft + 9, deviceTop + 73,
                 status.phoneState.equals("incoming") ? 0xFFFFD166 : MUTED, false);
         if (!status.phoneCoverage) {
-            context.drawCenteredString(font,
+            context.centeredText(font,
                     Component.translatable("gui.rp-vca.phone.no_network"),
                     deviceLeft + deviceWidth / 2, deviceTop + deviceHeight - 43, 0xFFFF6B73);
         } else if (!status.phoneNotice.isBlank()) {
             Component notice = status.phoneNotice.startsWith("notice.rp-vca.")
                     ? Component.translatable(status.phoneNotice) : Component.literal(status.phoneNotice);
-            context.drawCenteredString(font, notice,
+            context.centeredText(font, notice,
                     deviceLeft + deviceWidth / 2, deviceTop + deviceHeight - 43, 0xFFFFD166);
         }
         boolean empty = (page == Page.CONTACTS && status.contacts.isEmpty())
                 || (page == Page.HISTORY && status.callHistory.isEmpty())
                 || (page == Page.APPS && status.phoneApps.isEmpty());
         if (empty) {
-            context.drawCenteredString(font,
+            context.centeredText(font,
                     Component.translatable("gui.rp-vca.phone.empty"),
                     deviceLeft + deviceWidth / 2, deviceTop + 112, MUTED);
         }

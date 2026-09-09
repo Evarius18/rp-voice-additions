@@ -4,7 +4,7 @@ import com.evarius.rpvca.client.ClientActions;
 import com.evarius.rpvca.client.gui.RadioScreen;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
@@ -47,7 +47,7 @@ public final class CommunicationKeybinds {
     }
 
     private static KeyMapping bind(String id, int key) {
-        return KeyBindingHelper.registerKeyBinding(new KeyMapping(id, InputConstants.Type.KEYSYM, key, CATEGORY));
+        return KeyMappingHelper.registerKeyMapping(new KeyMapping(id, InputConstants.Type.KEYSYM, key, CATEGORY));
     }
 
     private static void tick(Minecraft client) {

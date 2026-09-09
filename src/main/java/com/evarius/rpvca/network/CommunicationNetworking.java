@@ -19,10 +19,10 @@ public final class CommunicationNetworking {
     }
 
     public static void registerPayloads() {
-        PayloadTypeRegistry.playC2S().register(DeviceActionPayload.ID, DeviceActionPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(OpenDevicePayload.ID, OpenDevicePayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(StatusPayload.ID, StatusPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(SirenControllerPayload.ID, SirenControllerPayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(DeviceActionPayload.ID, DeviceActionPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(OpenDevicePayload.ID, OpenDevicePayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(StatusPayload.ID, StatusPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(SirenControllerPayload.ID, SirenControllerPayload.CODEC);
     }
 
     public static void registerServerReceiver() {

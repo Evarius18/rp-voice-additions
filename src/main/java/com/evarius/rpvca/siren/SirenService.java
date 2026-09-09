@@ -122,7 +122,7 @@ public final class SirenService implements SirenApi {
 
     public synchronized boolean openController(ServerPlayer player, ResourceKey<Level> world, BlockPos pos) {
         if (!config.enabled) {
-            player.displayClientMessage(Component.translatable("message.rp-vca.siren.disabled"), true);
+            player.sendSystemMessage(Component.translatable("message.rp-vca.siren.disabled"), true);
             return false;
         }
         Controller controller = controllerAt(world, pos);
@@ -141,7 +141,7 @@ public final class SirenService implements SirenApi {
         if (!canConfigure(player)) return SirenActionResult.NOT_ALLOWED;
         if (!isHoldingProgrammer(player)) return SirenActionResult.PROGRAMMER_REQUIRED;
         pendingLinks.put(player.getUUID(), controller.id);
-        player.displayClientMessage(Component.translatable("message.rp-vca.siren.link_mode"), true);
+        player.sendSystemMessage(Component.translatable("message.rp-vca.siren.link_mode"), true);
         return SirenActionResult.SUCCESS;
     }
 
@@ -150,7 +150,7 @@ public final class SirenService implements SirenApi {
         UUID controllerId = pendingLinks.remove(player.getUUID());
         if (controllerId == null) return SirenActionResult.INVALID_REQUEST;
         if (!isHoldingProgrammer(player)) {
-            player.displayClientMessage(Component.translatable("message.rp-vca.siren.programmer_required"), true);
+            player.sendSystemMessage(Component.translatable("message.rp-vca.siren.programmer_required"), true);
             return SirenActionResult.PROGRAMMER_REQUIRED;
         }
         Controller controller = controller(controllerId);
@@ -166,12 +166,12 @@ public final class SirenService implements SirenApi {
         if (controller == null || siren == null) return SirenActionResult.NOT_FOUND;
         if (!canConfigure(player)) return SirenActionResult.NOT_ALLOWED;
         if (!config.allowCrossDimensionLinks && !controller.dimension.equals(siren.dimension)) {
-            player.displayClientMessage(Component.translatable("message.rp-vca.siren.cross_dimension_denied"), true);
+            player.sendSystemMessage(Component.translatable("message.rp-vca.siren.cross_dimension_denied"), true);
             return SirenActionResult.INVALID_REQUEST;
         }
         if (controller.linkedSirens.remove(siren.id)) {
             save();
-            player.displayClientMessage(Component.translatable("message.rp-vca.siren.unlinked"), true);
+            player.sendSystemMessage(Component.translatable("message.rp-vca.siren.unlinked"), true);
             return SirenActionResult.SUCCESS;
         }
         if (controller.linkedSirens.size() >= config.maxLinkedSirensPerController) {
@@ -179,7 +179,7 @@ public final class SirenService implements SirenApi {
         }
         controller.linkedSirens.add(siren.id);
         save();
-        player.displayClientMessage(Component.translatable("message.rp-vca.siren.linked"), true);
+        player.sendSystemMessage(Component.translatable("message.rp-vca.siren.linked"), true);
         return SirenActionResult.SUCCESS;
     }
 
@@ -231,7 +231,7 @@ public final class SirenService implements SirenApi {
         try {
             ServerPlayer operator = server.getPlayerList().getPlayer(UUID.fromString(sourceId));
             if (operator != null && !SirenVoiceEngine.isPlayerListening(operator.getUUID())) {
-                operator.displayClientMessage(Component.translatable("message.rp-vca.siren.voice_chat_disabled"), true);
+                operator.sendSystemMessage(Component.translatable("message.rp-vca.siren.voice_chat_disabled"), true);
             }
         } catch (IllegalArgumentException ignored) {
             // Scheduled alarms and trusted integrations use descriptive source identifiers.

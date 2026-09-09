@@ -8,7 +8,7 @@ import com.evarius.rpvca.client.gui.component.HandheldScreen;
 import com.evarius.rpvca.network.CommunicationStatus;
 import java.util.List;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.network.chat.Component;
 
@@ -63,13 +63,13 @@ public final class RadioScreen extends HandheldScreen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         renderHandheldFrame(context);
         renderRadioBody(context);
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 
-    private void renderRadioBody(GuiGraphics context) {
+    private void renderRadioBody(GuiGraphicsExtractor context) {
         CommunicationStatus status = ClientCommunicationState.get();
         int center = deviceLeft + deviceWidth / 2;
 
@@ -83,7 +83,7 @@ public final class RadioScreen extends HandheldScreen {
                     deviceLeft + deviceWidth - 49 + i * 6, deviceTop + 34, 0xFF263940);
         }
 
-        context.drawCenteredString(font, title, center, deviceTop + 17, TEXT);
+        context.centeredText(font, title, center, deviceTop + 17, TEXT);
         context.fill(deviceLeft + 20, deviceTop + 41, deviceLeft + deviceWidth - 20,
                 deviceTop + 96, 0xFF789B8C);
         context.fill(deviceLeft + 23, deviceTop + 44, deviceLeft + deviceWidth - 23,
@@ -96,9 +96,9 @@ public final class RadioScreen extends HandheldScreen {
         int modeColor = status.radioTransmitting ? 0xFF8B1717
                 : status.radioChannel.isBlank() ? 0xFF4B5B53 : 0xFF174A31;
 
-        context.drawCenteredString(font, channel, center, deviceTop + 53, 0xFF0A1A14);
-        context.drawCenteredString(font, channelId, center, deviceTop + 67, 0xFF29483B);
-        context.drawCenteredString(font, Component.literal(mode), center, deviceTop + 81, modeColor);
+        context.centeredText(font, channel, center, deviceTop + 53, 0xFF0A1A14);
+        context.centeredText(font, channelId, center, deviceTop + 67, 0xFF29483B);
+        context.centeredText(font, Component.literal(mode), center, deviceTop + 81, modeColor);
         context.fill(deviceLeft + 27, deviceTop + 83, deviceLeft + 32, deviceTop + 88,
                 status.radioTransmitting ? 0xFFFF584F : 0xFF49D17C);
     }
@@ -110,7 +110,7 @@ public final class RadioScreen extends HandheldScreen {
         }
 
         @Override
-        public void renderWidget(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+        public void extractWidgetRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
             int barY = getY() + height - 6;
             context.fill(getX(), getY(), getX() + width, getY() + height, 0xFF172229);
             context.fill(getX() + 7, barY, getX() + width - 7, barY + 3, 0xFF3A5059);
@@ -118,7 +118,7 @@ public final class RadioScreen extends HandheldScreen {
             int knob = getX() + 7 + (int) Math.round(value * available);
             context.fill(getX() + 7, barY, knob, barY + 3, 0xFF65C7D8);
             context.fill(knob - 2, barY - 2, knob + 2, barY + 5, 0xFFE8F7FA);
-            context.drawCenteredString(Minecraft.getInstance().font, getMessage(),
+            context.centeredText(Minecraft.getInstance().font, getMessage(),
                     getX() + width / 2, getY() + 3, 0xFFE8F7FA);
         }
 
