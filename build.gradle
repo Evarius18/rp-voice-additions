@@ -31,6 +31,7 @@ dependencies {
 
 	implementation "de.maxhenkel.voicechat:voicechat-api:${project.voicechat_api_version}"
 	modRuntimeOnly "maven.modrinth:simple-voice-chat:fabric-${project.voicechat_version}"
+	// Loom does not expose Simple Voice Chat's nested API mod in development runs.
 	modRuntimeOnly "de.maxhenkel.voicechat:voicechat-api:${project.voicechat_api_version}:fabric-stub"
 
 	testImplementation platform("org.junit:junit-bom:5.11.4")
