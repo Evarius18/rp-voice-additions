@@ -7,11 +7,11 @@ cellular network without modifying Simple Voice Chat.
 
 ## Requirements
 
-* Minecraft 1.21.9
+* Minecraft 1.21.9 or 1.21.10
 * Java 21
 * Fabric Loader 0.19.3 or newer
 * Fabric API
-* Simple Voice Chat 1.21.9-2.6.4 or newer for Minecraft 1.21.9, on client and server
+* The matching Simple Voice Chat build for Minecraft 1.21.9 or 1.21.10, on client and server
 
 ## Features
 
